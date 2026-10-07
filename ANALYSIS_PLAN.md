@@ -131,3 +131,15 @@ The table was drafted from the first 500,000 rows. The loader raises an error if
 ### Amendment 2: correction to section C (made before any model was run)
 
 Section C said the linear predictor would be "standardised within each outer fold" before computing the calibration slope. That was a mistake. Standardising removes the scale of the linear predictor, which is exactly what the calibration slope measures, so the slope would reflect only discrimination. The calibration slope is computed on the **raw** out-of-fold linear predictor. Each fold's model sees features standardised on its own training data, so training-fold linear predictors are centred near 0 and pooling across folds is reasonable.
+
+### Amendment 3: ER-negative clinical columns and a CELESTA-label analysis (made before any real METABRIC outcome was linked to features)
+
+Status when this was written: the part II pipeline had only been dry-run on a truncated copy of the METABRIC cells with **outcomes shuffled across patients**, to find bugs. No real METABRIC outcome had been linked to any feature. The CELESTA-Lite cell typing (commit "Add CELESTA-Lite …") uses no outcome data.
+
+**(a) Section D, clinical columns in the ER-negative subgroup.** ER is constant (0) by definition in this subgroup, and other binary clinical variables can be nearly constant. The outcome-shuffled dry run showed that an unpenalised clinical block then cannot be fitted, the same problem that removed pM in part I. Rule: within the subgroup, drop ER and any binary clinical column whose minority level has fewer than 10 patients. The rule uses covariates only, never outcomes. The dropped columns are reported.
+
+**(b) New section E: spatial features from CELESTA-Lite labels (METABRIC; secondary, descriptive).** Part I and section A compute spatial features from published cell labels. Section E asks whether labels from an independent, spatially informed cell typer change the answer.
+
+- **Labels.** CELESTA-Lite as committed: signature **v1** (the version written before any comparison with the published labels), posterior expression probabilities, arcsinh cofactor 1, cohort-level marker mixtures, and reference defaults for everything else (k = 5, bandwidth 100 µm, γ = 5). Signature v2 is not used here. Cells labelled Unknown are left out of the spatial graph.
+- **Features.** The same 11 spatial features, log O/E version (as in H1), computed from CELESTA coarse classes with the same code and parameters as section A.
+- **Model E.** clinical + native composition + spatial (log O/E, CELESTA labels), compared with model 2 (clinical + native composition), for OS and DSS. Reporting is the same as A1: bootstrap ΔC, 10 CV repeats, and a 20-permutation null. There is no confirmatory claim.
