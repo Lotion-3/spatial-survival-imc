@@ -1,0 +1,450 @@
+{
+  "cohort": {
+    "cohort": "Basel TMA (Jackson et al. 2020), tumor cores only",
+    "n_tumor_patients": 281,
+    "n_dropped_nonpositive_or_missing_time": 1,
+    "n_patients": 280,
+    "n_images": 288,
+    "patients_with_2_images": 8,
+    "n_cells": 762776,
+    "events_os": 79,
+    "events_dss": 57,
+    "median_followup_months_all": 74.0,
+    "missing_clinical": {
+      "pN": 13,
+      "ER": 1,
+      "PR": 6
+    },
+    "spatial_missing": {
+      "enrich_Tumor__Tumor": 1,
+      "enrich_Tumor__T": 9,
+      "enrich_Tumor__Macrophage": 11,
+      "enrich_Tumor__B": 108,
+      "enrich_Tumor__Stroma": 1,
+      "enrich_Tumor__Endothelial": 24,
+      "enrich_T__Macrophage": 17,
+      "enrich_T__B": 107,
+      "enrich_Stroma__T": 8,
+      "logoe_Tumor__Tumor": 1,
+      "logoe_Tumor__T": 9,
+      "logoe_Tumor__Macrophage": 11,
+      "logoe_Tumor__B": 108,
+      "logoe_Tumor__Stroma": 1,
+      "logoe_Tumor__Endothelial": 24,
+      "logoe_T__Macrophage": 17,
+      "logoe_T__B": 107,
+      "logoe_Stroma__T": 8
+    },
+    "n_composition_features": 27,
+    "n_spatial_features": 11
+  },
+  "os": {
+    "cindex": [
+      {
+        "model": "clinical",
+        "cindex": 0.7408210180623973,
+        "ci_low": 0.6869341090284934,
+        "ci_high": 0.7919103902000796,
+        "cindex_per_seed": "0.7350;0.7548;0.7326"
+      },
+      {
+        "model": "clinical+composition",
+        "cindex": 0.7476737821565408,
+        "ci_low": 0.6898663995587603,
+        "ci_high": 0.8014331304852488,
+        "cindex_per_seed": "0.7400;0.7601;0.7429"
+      },
+      {
+        "model": "clinical+composition+spatial",
+        "cindex": 0.7495128626163109,
+        "ci_low": 0.6928319514504105,
+        "ci_high": 0.8026849520494121,
+        "cindex_per_seed": "0.7417;0.7597;0.7471"
+      },
+      {
+        "model": "clinical+composition+spatial (log O/E, sensitivity)",
+        "cindex": 0.7440394088669952,
+        "ci_low": 0.6875614210420312,
+        "ci_high": 0.7961918384228119,
+        "cindex_per_seed": "0.7415;0.7404;0.7502"
+      },
+      {
+        "model": "random baseline",
+        "cindex": 0.5030979748221127,
+        "ci_low": 0.46494602637418503,
+        "ci_high": 0.5404126782519095,
+        "cindex_per_seed": "0.5636;0.4843;0.4614"
+      }
+    ],
+    "paired_differences": [
+      {
+        "comparison": "clinical+composition minus clinical",
+        "delta": 0.006852764094143482,
+        "ci_low": -0.016989930058435736,
+        "ci_high": 0.029434020929751583,
+        "frac_boot_gt0": 0.674
+      },
+      {
+        "comparison": "clinical+composition+spatial minus clinical+composition",
+        "delta": 0.0018390804597701038,
+        "ci_low": -0.005158874501624952,
+        "ci_high": 0.008337550090506478,
+        "frac_boot_gt0": 0.702
+      },
+      {
+        "comparison": "clinical+composition+spatial minus clinical",
+        "delta": 0.008691844553913586,
+        "ci_low": -0.014472330045542072,
+        "ci_high": 0.03138237649592399,
+        "frac_boot_gt0": 0.739
+      },
+      {
+        "comparison": "clinical+composition+spatial (log O/E, sensitivity) minus clinical+composition",
+        "delta": -0.0036343732895456338,
+        "ci_low": -0.013680720750446625,
+        "ci_high": 0.006091981813916621,
+        "frac_boot_gt0": 0.236
+      }
+    ],
+    "robustness": {
+      "clinical+composition+spatial": {
+        "cv_repeats": 10,
+        "delta_mean": -0.0015829228243021353,
+        "delta_sd": 0.005884791123068046,
+        "delta_min": -0.011625615763546704,
+        "delta_max": 0.0066995073891624735,
+        "frac_repeats_gt0": 0.4,
+        "observed_delta_3seeds": 0.0018390804597701038,
+        "null_mean": 0.0020547345374931844,
+        "null_sd": 0.002747489223355383,
+        "null_max": 0.005276409414340488,
+        "perm_p": 0.6666666666666666
+      },
+      "clinical+composition+spatial (log O/E, sensitivity)": {
+        "cv_repeats": 10,
+        "delta_mean": 0.0012348111658456618,
+        "delta_sd": 0.010370451001747136,
+        "delta_min": -0.019704433497536922,
+        "delta_max": 0.015566502463054244,
+        "frac_repeats_gt0": 0.7,
+        "observed_delta_3seeds": -0.0036343732895456338,
+        "null_mean": 0.001117679255610319,
+        "null_sd": 0.003046231287287271,
+        "null_max": 0.005648604269293959,
+        "perm_p": 0.9523809523809523
+      }
+    },
+    "spatial_coefficients": [
+      {
+        "feature": "tumor_immune_mixing",
+        "mean_coef": 0.04490991875264059,
+        "sd_coef": 0.07665892093865745,
+        "selection_freq": 0.3333333333333333
+      },
+      {
+        "feature": "enrich_T__Macrophage",
+        "mean_coef": -0.037352785482151256,
+        "sd_coef": 0.06237586738147643,
+        "selection_freq": 0.3333333333333333
+      },
+      {
+        "feature": "enrich_Tumor__Macrophage",
+        "mean_coef": 0.01092611041993634,
+        "sd_coef": 0.03396862886982076,
+        "selection_freq": 0.13333333333333333
+      },
+      {
+        "feature": "enrich_Tumor__T",
+        "mean_coef": 0.006861489408126807,
+        "sd_coef": 0.024614294438389472,
+        "selection_freq": 0.13333333333333333
+      },
+      {
+        "feature": "enrich_Stroma__T",
+        "mean_coef": 0.0065532081246354925,
+        "sd_coef": 0.02538046593094441,
+        "selection_freq": 0.06666666666666667
+      },
+      {
+        "feature": "enrich_Tumor__Endothelial",
+        "mean_coef": 0.002892821013068507,
+        "sd_coef": 0.011203847607173195,
+        "selection_freq": 0.06666666666666667
+      },
+      {
+        "feature": "enrich_Tumor__Tumor",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      },
+      {
+        "feature": "enrich_Tumor__B",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      },
+      {
+        "feature": "enrich_Tumor__Stroma",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      },
+      {
+        "feature": "enrich_T__B",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      },
+      {
+        "feature": "tumor_immune_nbr_frac",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      }
+    ]
+  },
+  "dss": {
+    "cindex": [
+      {
+        "model": "clinical",
+        "cindex": 0.7211659165365422,
+        "ci_low": 0.6603833788385324,
+        "ci_high": 0.7774106609653079,
+        "cindex_per_seed": "0.7342;0.7365;0.6928"
+      },
+      {
+        "model": "clinical+composition",
+        "cindex": 0.7233703805762225,
+        "ci_low": 0.6602105919322306,
+        "ci_high": 0.7795209754965644,
+        "cindex_per_seed": "0.7535;0.7072;0.7095"
+      },
+      {
+        "model": "clinical+composition+spatial",
+        "cindex": 0.7377300143902513,
+        "ci_low": 0.6771503968953472,
+        "ci_high": 0.7922500196921503,
+        "cindex_per_seed": "0.7593;0.7393;0.7146"
+      },
+      {
+        "model": "clinical+composition+spatial (log O/E, sensitivity)",
+        "cindex": 0.7509567986283335,
+        "ci_low": 0.6912405029255079,
+        "ci_high": 0.802545487754875,
+        "cindex_per_seed": "0.7681;0.7484;0.7364"
+      },
+      {
+        "model": "random baseline",
+        "cindex": 0.504516089525734,
+        "ci_low": 0.4592443653341844,
+        "ci_high": 0.5528122968049985,
+        "cindex_per_seed": "0.5613;0.4635;0.4887"
+      }
+    ],
+    "paired_differences": [
+      {
+        "comparison": "clinical+composition minus clinical",
+        "delta": 0.0022044640396803317,
+        "ci_low": -0.03792869082479147,
+        "ci_high": 0.03974194031659746,
+        "frac_boot_gt0": 0.537
+      },
+      {
+        "comparison": "clinical+composition+spatial minus clinical+composition",
+        "delta": 0.014359633814028827,
+        "ci_low": 2.6777791716689818e-05,
+        "ci_high": 0.030755626144755226,
+        "frac_boot_gt0": 0.975
+      },
+      {
+        "comparison": "clinical+composition+spatial minus clinical",
+        "delta": 0.01656409785370916,
+        "ci_low": -0.021146234466037233,
+        "ci_high": 0.05238072035296817,
+        "frac_boot_gt0": 0.808
+      },
+      {
+        "comparison": "clinical+composition+spatial (log O/E, sensitivity) minus clinical+composition",
+        "delta": 0.02758641805211104,
+        "ci_low": 0.008417631894135533,
+        "ci_high": 0.04983297925517362,
+        "frac_boot_gt0": 0.999
+      }
+    ],
+    "robustness": {
+      "clinical+composition+spatial": {
+        "cv_repeats": 10,
+        "delta_mean": 0.0024616515109763815,
+        "delta_sd": 0.01420745661266319,
+        "delta_min": -0.02112611371360329,
+        "delta_max": 0.03214843391200517,
+        "frac_repeats_gt0": 0.7,
+        "observed_delta_3seeds": 0.014359633814028827,
+        "null_mean": 0.006614922996846376,
+        "null_sd": 0.0075086312436973435,
+        "null_max": 0.02323872508496368,
+        "perm_p": 0.14285714285714285
+      },
+      "clinical+composition+spatial (log O/E, sensitivity)": {
+        "cv_repeats": 10,
+        "delta_mean": 0.011022320198401759,
+        "delta_sd": 0.01723205454169754,
+        "delta_min": -0.017635712317442875,
+        "delta_max": 0.04124184807568654,
+        "frac_repeats_gt0": 0.8,
+        "observed_delta_3seeds": 0.02758641805211104,
+        "null_mean": 0.004897278099262106,
+        "null_sd": 0.007937850865204597,
+        "null_max": 0.01561495361440246,
+        "perm_p": 0.047619047619047616
+      }
+    },
+    "spatial_coefficients": [
+      {
+        "feature": "enrich_Tumor__T",
+        "mean_coef": 0.09131425347681682,
+        "sd_coef": 0.06562142301437184,
+        "selection_freq": 0.8666666666666667
+      },
+      {
+        "feature": "enrich_T__Macrophage",
+        "mean_coef": -0.06887337221650465,
+        "sd_coef": 0.07364681024207782,
+        "selection_freq": 0.8
+      },
+      {
+        "feature": "tumor_immune_mixing",
+        "mean_coef": 0.06411976011137846,
+        "sd_coef": 0.0703733430679262,
+        "selection_freq": 0.6
+      },
+      {
+        "feature": "enrich_Tumor__Tumor",
+        "mean_coef": -0.017452542114803783,
+        "sd_coef": 0.03360891626076426,
+        "selection_freq": 0.3333333333333333
+      },
+      {
+        "feature": "enrich_Tumor__Macrophage",
+        "mean_coef": 0.01107264499353191,
+        "sd_coef": 0.01854714537315998,
+        "selection_freq": 0.3333333333333333
+      },
+      {
+        "feature": "enrich_Tumor__B",
+        "mean_coef": 0.0076405133120012155,
+        "sd_coef": 0.02959158081385678,
+        "selection_freq": 0.06666666666666667
+      },
+      {
+        "feature": "tumor_immune_nbr_frac",
+        "mean_coef": 0.006724825364721152,
+        "sd_coef": 0.018524004693311343,
+        "selection_freq": 0.13333333333333333
+      },
+      {
+        "feature": "enrich_Tumor__Endothelial",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      },
+      {
+        "feature": "enrich_Tumor__Stroma",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      },
+      {
+        "feature": "enrich_Stroma__T",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      },
+      {
+        "feature": "enrich_T__B",
+        "mean_coef": 0.0,
+        "sd_coef": 0.0,
+        "selection_freq": 0.0
+      }
+    ]
+  },
+  "km": {
+    "model": "clinical+composition+spatial",
+    "logrank_p": 6.5350410471292855e-09,
+    "risk": "mean OOF rank across 3 CV repeats"
+  },
+  "km_clinical": {
+    "model": "clinical",
+    "logrank_p": 8.328989371783045e-10
+  },
+  "km_group_agreement": 0.9357142857142857,
+  "spatial_vs_ncells_spearman": {
+    "enrich_Tumor__Tumor": 0.545,
+    "enrich_Tumor__T": -0.439,
+    "enrich_Tumor__Macrophage": -0.302,
+    "enrich_Tumor__B": -0.207,
+    "enrich_Tumor__Stroma": -0.41,
+    "enrich_Tumor__Endothelial": -0.51,
+    "enrich_T__Macrophage": 0.304,
+    "enrich_T__B": -0.035,
+    "enrich_Stroma__T": 0.387,
+    "tumor_immune_nbr_frac": -0.169,
+    "tumor_immune_mixing": 0.194,
+    "logoe_Tumor__Tumor": -0.285,
+    "logoe_Tumor__T": -0.025,
+    "logoe_Tumor__Macrophage": -0.02,
+    "logoe_Tumor__B": 0.056,
+    "logoe_Tumor__Stroma": -0.213,
+    "logoe_Tumor__Endothelial": -0.1,
+    "logoe_T__Macrophage": 0.299,
+    "logoe_T__B": -0.055,
+    "logoe_Stroma__T": 0.375
+  },
+  "config": {
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "outer_folds": 5,
+    "inner_folds": 5,
+    "knn_k": 8,
+    "n_perm": 200,
+    "spatial_seed": 12345,
+    "clr_pseudocount": 0.5,
+    "l1_ratio": 0.5,
+    "n_alphas": 20,
+    "alpha_min_ratio": 0.01,
+    "coxnet_max_iter": 100000,
+    "ridge_log10_min": -2.0,
+    "ridge_log10_max": 3.0,
+    "n_boot": 1000,
+    "boot_seed": 2024,
+    "endpoints": {
+      "os": "event_os",
+      "dss": "event_dss"
+    },
+    "primary_endpoint": "os",
+    "robustness_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "n_perm_null": 20
+  },
+  "environment": {
+    "python": "3.12.10",
+    "sklearn": "1.9.1",
+    "sksurv": "0.28.0",
+    "numpy": "2.5.3",
+    "pandas": "2.3.3"
+  },
+  "runtime_seconds": 263.4
+}

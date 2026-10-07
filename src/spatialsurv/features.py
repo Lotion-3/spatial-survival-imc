@@ -35,6 +35,10 @@ def pair_name(a: str, b: str) -> str:
 
 
 SPATIAL_COLS = [pair_name(a, b) for a, b in PAIRS] + ["tumor_immune_nbr_frac", "tumor_immune_mixing"]
+# Sensitivity variant: log2 observed/expected edge counts instead of z-scores. z grows with
+# the number of cells in an image (sd ~ sqrt(edges)); O/E does not.
+SPATIAL_COLS_LOGOE = [c.replace("enrich_", "logoe_") for c in SPATIAL_COLS]
+ALL_SPATIAL_COLS = SPATIAL_COLS + [c for c in SPATIAL_COLS_LOGOE if c not in SPATIAL_COLS]
 
 
 # --------------------------------------------------------------------------- graphs
@@ -113,6 +117,10 @@ def image_spatial_features(
         ia, ib = type_idx[a], type_idx[b]
         ok = counts[ia] >= MIN_CELLS_PER_TYPE and counts[ib] >= MIN_CELLS_PER_TYPE and sd[ia, ib] > 0
         feats[pair_name(a, b)] = float((obs[ia, ib] - mu[ia, ib]) / sd[ia, ib]) if ok else np.nan
+        # +1 pseudocount on both counts keeps O/E finite when a pair has no edges
+        feats[pair_name(a, b).replace("enrich_", "logoe_")] = (
+            float(np.log2((obs[ia, ib] + 1) / (mu[ia, ib] + 1))) if ok else np.nan
+        )
 
     is_immune = np.isin(labels, [type_idx[t] for t in IMMUNE])
     is_tumor = labels == type_idx["Tumor"]
@@ -141,17 +149,18 @@ def spatial_features_by_image(cells: pd.DataFrame, k: int, n_perm: int, seed: in
 
 def aggregate_to_patient(img: pd.DataFrame, cores: pd.DataFrame) -> pd.DataFrame:
     """Cell-count-weighted mean of image features per patient (NaN-aware)."""
+    cols = [c for c in ALL_SPATIAL_COLS if c in img.columns]
     df = img.join(cores.set_index("core")["PID"], how="inner")
     out = {}
     for pid, g in df.groupby("PID"):
         w = g["n_cells"].to_numpy(float)
         row = {}
-        for c in SPATIAL_COLS:
+        for c in cols:
             v = g[c].to_numpy(float)
             m = ~np.isnan(v)
             row[c] = float(np.average(v[m], weights=w[m])) if m.any() else np.nan
         out[pid] = row
-    return pd.DataFrame.from_dict(out, orient="index")[SPATIAL_COLS]
+    return pd.DataFrame.from_dict(out, orient="index")[cols]
 
 
 # --------------------------------------------------------------------------- composition

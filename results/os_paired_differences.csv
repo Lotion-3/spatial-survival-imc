@@ -1,0 +1,5 @@
+comparison,delta,ci_low,ci_high,frac_boot_gt0
+clinical+composition minus clinical,0.006852764094143482,-0.016989930058435736,0.029434020929751583,0.674
+clinical+composition+spatial minus clinical+composition,0.0018390804597701038,-0.005158874501624952,0.008337550090506478,0.702
+clinical+composition+spatial minus clinical,0.008691844553913586,-0.014472330045542072,0.03138237649592399,0.739
+"clinical+composition+spatial (log O/E, sensitivity) minus clinical+composition",-0.0036343732895456338,-0.013680720750446625,0.006091981813916621,0.236

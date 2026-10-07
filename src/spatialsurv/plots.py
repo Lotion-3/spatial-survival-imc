@@ -82,13 +82,13 @@ def spatial_coef_plot(df: pd.DataFrame, out: Path, title: str) -> None:
     ax.axvline(0, color=MUTED, lw=1)
     ax.grid(axis="x", color=GRID, lw=0.8, zorder=0)
     for i, r in t.iterrows():
-        c = ORANGE if r.mean_coef > 0 else BLUE
+        c = MUTED if r.selection_freq == 0 else (ORANGE if r.mean_coef > 0 else BLUE)
         ax.plot([r.mean_coef - r.sd_coef, r.mean_coef + r.sd_coef], [i, i], color=c, lw=2,
                 solid_capstyle="round", alpha=0.5)
         ax.plot(r.mean_coef, i, "o", ms=8, color=c, mec=SURFACE, mew=2)
     ax.set_yticks(range(len(t)), [f"{f}  ({s:.0%})" for f, s in zip(t.feature, t.selection_freq)])
     ax.set_xlabel("Standardised log-hazard coefficient (mean ± SD over 15 outer folds)\n"
-                  "orange = higher value, higher hazard; % = folds with non-zero coefficient")
+                  "orange = higher value, higher hazard; grey = never selected; % = folds with non-zero coefficient")
     ax.set_title(title, loc="left", color=INK, fontsize=11)
     fig.savefig(out)
     plt.close(fig)

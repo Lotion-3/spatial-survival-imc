@@ -27,7 +27,12 @@ COARSE = {
 }
 IMMUNE = ("B", "T", "Macrophage")
 
-CLINICAL_COLS = ["age", "tumor_size", "grade_2", "grade_3", "pN", "pM", "ER", "PR", "HER2"]
+# Grade is encoded as one ordinal column (1-3), not one-hot: grade 1 has only 2 disease-
+# specific deaths (38 patients), so one-hot dummies are quasi-separated in some CV training
+# folds and unpenalised Cox coefficients diverge. All other categoricals are binary.
+# pM is loaded but not modelled: only 7/280 patients are M1, so some inner training folds
+# contain a single M1 patient and its unpenalised coefficient is not estimable.
+CLINICAL_COLS = ["age", "tumor_size", "grade", "pN", "ER", "PR", "HER2"]
 
 _PN_MAP = {"0": 0, "0sl": 0, "0sn": 0, "1": 1, "1a": 1, "1mi": 1, "2": 2, "2a": 2, "3": 3, "3a": 3, "3b": 3}
 _STATUS_MAP = {"positive": 1.0, "negative": 0.0}
@@ -77,9 +82,7 @@ def load_patients(raw: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     out["event_dss"] = status.eq("death by primary disease")
     out["age"] = pd.to_numeric(pat["age"], errors="coerce")
     out["tumor_size"] = pd.to_numeric(pat["tumor_size"], errors="coerce")
-    grade = pd.to_numeric(pat["grade"], errors="coerce")
-    out["grade_2"] = (grade == 2).astype(float).where(grade.notna())
-    out["grade_3"] = (grade == 3).astype(float).where(grade.notna())
+    out["grade"] = pd.to_numeric(pat["grade"], errors="coerce")
     out["pN"] = pat["PTNM_N"].astype(str).str.strip().map(_PN_MAP)  # 'x'/'X' (not assessed) -> NaN
     out["pM"] = pd.to_numeric(pat["PTNM_M"], errors="coerce")
     for src, dst in [("ERStatus", "ER"), ("PRStatus", "PR"), ("HER2Status", "HER2")]:

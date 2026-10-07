@@ -1,0 +1,21 @@
+seed,model,base,cindex,cindex_base,delta
+0,clinical+composition+spatial,clinical+composition,0.7592541563332414,0.7534674382290806,0.005786718104160871
+0,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7680720124919629,0.7534674382290806,0.014604574262882308
+1,clinical+composition+spatial,clinical+composition,0.7393221273077983,0.7071736933957932,0.03214843391200517
+1,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7484155414714797,0.7071736933957932,0.04124184807568654
+2,clinical+composition+spatial,clinical+composition,0.7146137595297143,0.7094700101037935,0.005143749425920774
+2,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7363828419215578,0.7094700101037935,0.02691283181776427
+3,clinical+composition+spatial,clinical+composition,0.7297694498025168,0.7398732433177184,-0.010103793515201631
+3,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7222375310002755,0.7398732433177184,-0.017635712317442875
+4,clinical+composition+spatial,clinical+composition,0.7497933314962799,0.7597134196748415,-0.009920088178561604
+4,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7705520345366033,0.7597134196748415,0.010838614861761742
+5,clinical+composition+spatial,clinical+composition,0.7344539358868375,0.7278405437677965,0.006613392119040995
+5,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7408836226692386,0.7278405437677965,0.013043078901442073
+6,clinical+composition+spatial,clinical+composition,0.7166345182327547,0.737760631946358,-0.02112611371360329
+6,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7270138697529164,0.737760631946358,-0.010746762193441617
+7,clinical+composition+spatial,clinical+composition,0.7497933314962799,0.7426288233673188,0.007164508128961078
+7,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7428125287039589,0.7426288233673188,0.00018370533664002764
+8,clinical+composition+spatial,clinical+composition,0.7193900982823551,0.7138789381831542,0.00551116009920094
+8,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7336272618719574,0.7138789381831542,0.019748323688803193
+9,clinical+composition+spatial,clinical+composition,0.7462110774317994,0.7428125287039589,0.0033985487278405113
+9,"clinical+composition+spatial (log O/E, sensitivity)",clinical+composition,0.7548452282538808,0.7428125287039589,0.012032699549921921
