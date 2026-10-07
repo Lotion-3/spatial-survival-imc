@@ -5,6 +5,7 @@ Expects data/raw populated by scripts/download_data.py.
 
 from __future__ import annotations
 
+import argparse
 import json
 import platform
 import re
@@ -64,7 +65,7 @@ def slug(s: str) -> str:
     return re.sub(r"[^0-9A-Za-z]+", "_", s).strip("_")
 
 
-def build_features(cfg: dict) -> tuple[pd.DataFrame, list[str], dict]:
+def build_features(cfg: dict, recompute_spatial: bool = False) -> tuple[pd.DataFrame, list[str], dict]:
     patients, cores = load_patients(RAW)
     cells = load_cells(RAW, cores["core"].tolist())
     ann = load_annotations(RAW)
@@ -74,7 +75,7 @@ def build_features(cfg: dict) -> tuple[pd.DataFrame, list[str], dict]:
 
     PROC.mkdir(parents=True, exist_ok=True)
     cache = PROC / f"spatial_img_v2_k{cfg['knn_k']}_p{cfg['n_perm']}_s{cfg['spatial_seed']}.csv"
-    if cache.exists():
+    if cache.exists() and not recompute_spatial:
         img = pd.read_csv(cache, index_col="core")
     else:
         img = spatial_features_by_image(cells, cfg["knn_k"], cfg["n_perm"], cfg["spatial_seed"])
@@ -175,11 +176,14 @@ def spatial_coef_table(res: dict, comp_cols: list[str]) -> pd.DataFrame:
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--recompute-spatial", action="store_true", help="ignore the cached image-level spatial features")
+    args = ap.parse_args()
     t0 = time.time()
     RES.mkdir(exist_ok=True)
     FIG.mkdir(exist_ok=True)
     cfg = CONFIG
-    X, comp_cols, cohort = build_features(cfg)
+    X, comp_cols, cohort = build_features(cfg, args.recompute_spatial)
     X.to_csv(RES / "patient_features.csv")
     print(json.dumps(cohort, indent=2))
 

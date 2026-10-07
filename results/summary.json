@@ -115,8 +115,8 @@
         "delta_max": 0.0066995073891624735,
         "frac_repeats_gt0": 0.4,
         "observed_delta_3seeds": 0.0018390804597701038,
-        "null_mean": 0.0020547345374931844,
-        "null_sd": 0.002747489223355383,
+        "null_mean": 0.0020536398467433216,
+        "null_sd": 0.002750043710142553,
         "null_max": 0.005276409414340488,
         "perm_p": 0.6666666666666666
       },
@@ -128,8 +128,8 @@
         "delta_max": 0.015566502463054244,
         "frac_repeats_gt0": 0.7,
         "observed_delta_3seeds": -0.0036343732895456338,
-        "null_mean": 0.001117679255610319,
-        "null_sd": 0.003046231287287271,
+        "null_mean": 0.0011187739463601816,
+        "null_sd": 0.00304697180010121,
         "null_max": 0.005648604269293959,
         "perm_p": 0.9523809523809523
       }
@@ -137,38 +137,38 @@
     "spatial_coefficients": [
       {
         "feature": "tumor_immune_mixing",
-        "mean_coef": 0.04490991875264059,
-        "sd_coef": 0.07665892093865745,
+        "mean_coef": 0.044909903011043334,
+        "sd_coef": 0.0766588975264777,
         "selection_freq": 0.3333333333333333
       },
       {
         "feature": "enrich_T__Macrophage",
-        "mean_coef": -0.037352785482151256,
-        "sd_coef": 0.06237586738147643,
+        "mean_coef": -0.03735278548215126,
+        "sd_coef": 0.062375867381476435,
         "selection_freq": 0.3333333333333333
       },
       {
         "feature": "enrich_Tumor__Macrophage",
-        "mean_coef": 0.01092611041993634,
-        "sd_coef": 0.03396862886982076,
+        "mean_coef": 0.010926110419936312,
+        "sd_coef": 0.033968628869820654,
         "selection_freq": 0.13333333333333333
       },
       {
         "feature": "enrich_Tumor__T",
-        "mean_coef": 0.006861489408126807,
-        "sd_coef": 0.024614294438389472,
+        "mean_coef": 0.006861489408126789,
+        "sd_coef": 0.024614294438389462,
         "selection_freq": 0.13333333333333333
       },
       {
         "feature": "enrich_Stroma__T",
-        "mean_coef": 0.0065532081246354925,
-        "sd_coef": 0.02538046593094441,
+        "mean_coef": 0.006553208124635501,
+        "sd_coef": 0.025380465930944437,
         "selection_freq": 0.06666666666666667
       },
       {
         "feature": "enrich_Tumor__Endothelial",
-        "mean_coef": 0.002892821013068507,
-        "sd_coef": 0.011203847607173195,
+        "mean_coef": 0.002892821013068541,
+        "sd_coef": 0.011203847607173325,
         "selection_freq": 0.06666666666666667
       },
       {
@@ -302,44 +302,44 @@
     "spatial_coefficients": [
       {
         "feature": "enrich_Tumor__T",
-        "mean_coef": 0.09131425347681682,
-        "sd_coef": 0.06562142301437184,
+        "mean_coef": 0.09131496827813317,
+        "sd_coef": 0.06562132446015378,
         "selection_freq": 0.8666666666666667
       },
       {
         "feature": "enrich_T__Macrophage",
-        "mean_coef": -0.06887337221650465,
-        "sd_coef": 0.07364681024207782,
+        "mean_coef": -0.06887326349097835,
+        "sd_coef": 0.07364685140661135,
         "selection_freq": 0.8
       },
       {
         "feature": "tumor_immune_mixing",
-        "mean_coef": 0.06411976011137846,
-        "sd_coef": 0.0703733430679262,
+        "mean_coef": 0.06411976042795264,
+        "sd_coef": 0.0703733432618194,
         "selection_freq": 0.6
       },
       {
         "feature": "enrich_Tumor__Tumor",
-        "mean_coef": -0.017452542114803783,
-        "sd_coef": 0.03360891626076426,
+        "mean_coef": -0.017452084226824618,
+        "sd_coef": 0.033607594351965045,
         "selection_freq": 0.3333333333333333
       },
       {
         "feature": "enrich_Tumor__Macrophage",
-        "mean_coef": 0.01107264499353191,
-        "sd_coef": 0.01854714537315998,
+        "mean_coef": 0.011072820774567867,
+        "sd_coef": 0.018547371112016382,
         "selection_freq": 0.3333333333333333
       },
       {
         "feature": "enrich_Tumor__B",
-        "mean_coef": 0.0076405133120012155,
-        "sd_coef": 0.02959158081385678,
+        "mean_coef": 0.007640513312001224,
+        "sd_coef": 0.029591580813856818,
         "selection_freq": 0.06666666666666667
       },
       {
         "feature": "tumor_immune_nbr_frac",
-        "mean_coef": 0.006724825364721152,
-        "sd_coef": 0.018524004693311343,
+        "mean_coef": 0.006724825364721124,
+        "sd_coef": 0.018524004693311193,
         "selection_freq": 0.13333333333333333
       },
       {
@@ -446,5 +446,5 @@
     "numpy": "2.5.3",
     "pandas": "2.3.3"
   },
-  "runtime_seconds": 263.4
+  "runtime_seconds": 282.7
 }
