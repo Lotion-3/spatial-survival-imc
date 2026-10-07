@@ -1,0 +1,237 @@
+{
+  "config": {
+    "cofactor": 1.0,
+    "ep_method": "posterior",
+    "gmm_subsample": 200000,
+    "seed": 0,
+    "celesta": {
+      "n_neighbors": 5,
+      "bandwidth": 100.0,
+      "scale_factor": 5.0,
+      "max_iteration": 10,
+      "cell_change_threshold": 0.01
+    },
+    "spatial": {
+      "knn_k": 8,
+      "n_perm": 200,
+      "seed": 12345
+    }
+  },
+  "signature_version": "v1",
+  "signature": {
+    "Tumor": {
+      "round": 1,
+      "parent": "",
+      "panCK": 1,
+      "CD3": 0,
+      "CD20": 0.0,
+      "CD68": 0.0,
+      "CD31-vWF": 0.0,
+      "SMA": null,
+      "PDGFRB": null
+    },
+    "T cell": {
+      "round": 1,
+      "parent": "",
+      "panCK": 0,
+      "CD3": 1,
+      "CD20": 0.0,
+      "CD68": 0.0,
+      "CD31-vWF": null,
+      "SMA": null,
+      "PDGFRB": null
+    },
+    "B cell": {
+      "round": 1,
+      "parent": "",
+      "panCK": 0,
+      "CD3": 0,
+      "CD20": 1.0,
+      "CD68": null,
+      "CD31-vWF": null,
+      "SMA": null,
+      "PDGFRB": null
+    },
+    "Macrophage": {
+      "round": 1,
+      "parent": "",
+      "panCK": 0,
+      "CD3": 0,
+      "CD20": 0.0,
+      "CD68": 1.0,
+      "CD31-vWF": null,
+      "SMA": null,
+      "PDGFRB": null
+    },
+    "Endothelial": {
+      "round": 1,
+      "parent": "",
+      "panCK": 0,
+      "CD3": 0,
+      "CD20": null,
+      "CD68": 0.0,
+      "CD31-vWF": 1.0,
+      "SMA": null,
+      "PDGFRB": null
+    },
+    "Myofibroblast": {
+      "round": 1,
+      "parent": "",
+      "panCK": 0,
+      "CD3": 0,
+      "CD20": null,
+      "CD68": 0.0,
+      "CD31-vWF": 0.0,
+      "SMA": 1.0,
+      "PDGFRB": null
+    },
+    "Fibroblast": {
+      "round": 1,
+      "parent": "",
+      "panCK": 0,
+      "CD3": 0,
+      "CD20": null,
+      "CD68": 0.0,
+      "CD31-vWF": 0.0,
+      "SMA": null,
+      "PDGFRB": 1.0
+    }
+  },
+  "n_cells": 1066966,
+  "n_images": 749,
+  "artifact_frac": 0.04929585385101306,
+  "anchor_frac": 0.6088666368000479,
+  "celesta_vs_published": {
+    "coverage": 0.9220790540654529,
+    "n_assigned": 983827,
+    "agreement_assigned": 0.6725257591019559,
+    "kappa_assigned": 0.47581859525897896,
+    "agreement_all_cells": 0.6201219157873822
+  },
+  "marker_only_vs_published": {
+    "coverage": 0.9507041461489869,
+    "n_assigned": 1014369,
+    "agreement_assigned": 0.6017238302826683,
+    "kappa_assigned": 0.4056247485128788,
+    "agreement_all_cells": 0.5720613402863821
+  },
+  "index_cells": {
+    "n": 334187,
+    "celesta_agreement": 0.5894394455798699,
+    "marker_only_agreement_same_cells": 0.3981363727493888,
+    "changed_from_marker_only": 0.3682997842525293
+  },
+  "anchor_cells_agreement": 0.7152669170617573,
+  "spatial_feature_concordance": [
+    {
+      "feature": "enrich_Tumor__Tumor",
+      "n_images": 684,
+      "spearman": 0.838
+    },
+    {
+      "feature": "enrich_Tumor__T",
+      "n_images": 528,
+      "spearman": 0.62
+    },
+    {
+      "feature": "enrich_Tumor__Macrophage",
+      "n_images": 578,
+      "spearman": 0.657
+    },
+    {
+      "feature": "enrich_Tumor__B",
+      "n_images": 286,
+      "spearman": 0.666
+    },
+    {
+      "feature": "enrich_Tumor__Stroma",
+      "n_images": 645,
+      "spearman": 0.685
+    },
+    {
+      "feature": "enrich_Tumor__Endothelial",
+      "n_images": 639,
+      "spearman": 0.458
+    },
+    {
+      "feature": "enrich_T__Macrophage",
+      "n_images": 524,
+      "spearman": 0.18
+    },
+    {
+      "feature": "enrich_T__B",
+      "n_images": 301,
+      "spearman": 0.351
+    },
+    {
+      "feature": "enrich_Stroma__T",
+      "n_images": 539,
+      "spearman": 0.353
+    },
+    {
+      "feature": "tumor_immune_nbr_frac",
+      "n_images": 690,
+      "spearman": 0.597
+    },
+    {
+      "feature": "tumor_immune_mixing",
+      "n_images": 725,
+      "spearman": 0.82
+    },
+    {
+      "feature": "logoe_Tumor__Tumor",
+      "n_images": 684,
+      "spearman": 0.817
+    },
+    {
+      "feature": "logoe_Tumor__T",
+      "n_images": 528,
+      "spearman": 0.449
+    },
+    {
+      "feature": "logoe_Tumor__Macrophage",
+      "n_images": 578,
+      "spearman": 0.619
+    },
+    {
+      "feature": "logoe_Tumor__B",
+      "n_images": 286,
+      "spearman": 0.499
+    },
+    {
+      "feature": "logoe_Tumor__Stroma",
+      "n_images": 645,
+      "spearman": 0.615
+    },
+    {
+      "feature": "logoe_Tumor__Endothelial",
+      "n_images": 639,
+      "spearman": 0.523
+    },
+    {
+      "feature": "logoe_T__Macrophage",
+      "n_images": 524,
+      "spearman": 0.229
+    },
+    {
+      "feature": "logoe_T__B",
+      "n_images": 301,
+      "spearman": 0.438
+    },
+    {
+      "feature": "logoe_Stroma__T",
+      "n_images": 539,
+      "spearman": 0.263
+    }
+  ],
+  "example_core": {
+    "core": "MB_img514",
+    "agreement": 0.6096121416526138
+  },
+  "per_image_agreement": {
+    "median": 0.6096121416526138,
+    "q10": 0.3353763858590084,
+    "q90": 0.8294425231570681
+  },
+  "runtime_seconds": 106.2
+}
