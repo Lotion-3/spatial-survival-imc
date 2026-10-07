@@ -134,4 +134,4 @@
 - clinical-only model: log-rank p = 8.3e-10
 - patients assigned to the same risk half by both: 94%
 
-runtime_seconds: 383.1
+runtime_seconds: 399.4

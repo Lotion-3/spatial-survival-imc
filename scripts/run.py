@@ -170,7 +170,7 @@ def robustness(name: str, X: pd.DataFrame, y: np.ndarray, fsets: list[FeatureSet
     return out
 
 
-def spatial_coef_table(res: dict, comp_cols: list[str]) -> pd.DataFrame:
+def spatial_coef_table(res: dict) -> pd.DataFrame:
     fs = [f for f in res["fsets"] if f.name == M_SPAT][0]
     C = np.stack(res["coefs"][M_SPAT])  # (folds, features)
     cols = fs.columns
@@ -182,7 +182,7 @@ def spatial_coef_table(res: dict, comp_cols: list[str]) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values("mean_coef", key=np.abs, ascending=False).reset_index(drop=True)
 
 
-def make_overview_figures(img: pd.DataFrame, cfg: dict) -> None:
+def make_overview_figures(img: pd.DataFrame) -> None:
     # Headline figure: discrimination per endpoint + spatial delta vs. permutation null.
     eps = {"OS": "os", "DSS": "dss"}
     spatial = {"z-score features": M_SPAT, "log O/E (sensitivity)": M_SPAT_OE}
@@ -198,7 +198,7 @@ def make_overview_figures(img: pd.DataFrame, cfg: dict) -> None:
     # Example tissue. The mixing ratio also depends on how many immune cells there are
     # (sparse immune cells mostly touch tumor), so examples are drawn from images between the 40th
     # and 60th percentile of immune fraction, at the 10th/50th/90th percentile of mixing within that band.
-    patients, cores = load_patients(RAW)
+    _, cores = load_patients(RAW)
     cells = load_cells(RAW, cores["core"].tolist())
     n_cls = cells.groupby(["core", "coarse"]).size().unstack(fill_value=0)
     immune_frac = n_cls[list(IMMUNE)].sum(axis=1) / n_cls.sum(axis=1)
@@ -266,7 +266,7 @@ def main() -> None:
     summary["km_group_agreement"] = float(np.mean(hi_best == hi_clin))
 
     for ep in cfg["endpoints"]:
-        tab = spatial_coef_table(results[ep], comp_cols)
+        tab = spatial_coef_table(results[ep])
         tab.to_csv(RES / f"{ep}_spatial_coefficients.csv", index=False)
         summary[ep]["spatial_coefficients"] = tab.to_dict("records")
     for ep, lab in [("os", "OS"), ("dss", "DSS")]:
@@ -280,7 +280,7 @@ def main() -> None:
     diag.to_csv(RES / "spatial_vs_ncells.csv")
     summary["spatial_vs_ncells_spearman"] = diag.round(3).to_dict()
 
-    make_overview_figures(img, cfg)
+    make_overview_figures(img)
 
     summary["config"] = cfg
     summary["environment"] = dict(python=platform.python_version(), sklearn=sklearn.__version__,

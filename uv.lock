@@ -529,10 +529,14 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pytest" },
     { name = "scikit-learn" },
     { name = "scikit-survival" },
     { name = "scipy" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -541,11 +545,13 @@ requires-dist = [
     { name = "matplotlib", specifier = "==3.11.2" },
     { name = "numpy", specifier = "==2.5.3" },
     { name = "pandas", specifier = "==2.3.3" },
-    { name = "pytest", specifier = "==9.1.1" },
     { name = "scikit-learn", specifier = "==1.9.1" },
     { name = "scikit-survival", specifier = "==0.28.0" },
     { name = "scipy", specifier = "==1.18.1" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = "==9.1.1" }]
 
 [[package]]
 name = "threadpoolctl"
