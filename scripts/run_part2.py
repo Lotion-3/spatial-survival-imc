@@ -228,7 +228,7 @@ def main() -> None:
         FeatureSet(M_COMP, CLINICAL_COLS, native_cols),
         FeatureSet(M_SPAT, CLINICAL_COLS, native_cols, SPATIAL_COLS),
         FeatureSet(M_OE, CLINICAL_COLS, native_cols, SPATIAL_COLS_LOGOE),
-        FeatureSet(M_RES, CLINICAL_COLS, native_cols, SPATIAL_COLS_LOGOE + ["tumor_immune_nbr_frac", "tumor_immune_mixing"],
+        FeatureSet(M_RES, CLINICAL_COLS, native_cols, SPATIAL_COLS_LOGOE,
                    residualize_spatial=True),
     ]
     a1 = {}
@@ -257,7 +257,7 @@ def main() -> None:
     fs_b = [
         FeatureSet(M_CLIN, CLINICAL_COLS),
         FeatureSet(M_COMP, CLINICAL_COLS, basel_comp),
-        FeatureSet(M_RES, CLINICAL_COLS, basel_comp, SPATIAL_COLS_LOGOE + ["tumor_immune_nbr_frac", "tumor_immune_mixing"],
+        FeatureSet(M_RES, CLINICAL_COLS, basel_comp, SPATIAL_COLS_LOGOE,
                    residualize_spatial=True),
     ]
     for ep, col in ENDPOINTS.items():

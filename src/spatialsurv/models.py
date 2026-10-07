@@ -143,7 +143,7 @@ def _fit_coxnet_path(fs: FeatureSet, X, y, alphas: np.ndarray, cfg: dict) -> tup
         try:
             m.fit(X, y)
             return m, n_ok
-        except _FIT_ERRORS:
+        except ArithmeticError:  # coxnet divergence only; other errors are bugs and must surface
             continue
     raise RuntimeError("Coxnet failed to fit even at the largest alpha")
 
@@ -163,7 +163,7 @@ def alpha_grid(fs: FeatureSet, X, y, cfg: dict) -> np.ndarray:
             try:
                 m.fit(X, y)
                 return np.asarray(m.named_steps["cox"].alphas_)
-            except _FIT_ERRORS:
+            except ArithmeticError:
                 ratio *= 2
     raise RuntimeError("could not derive an alpha grid")
 
