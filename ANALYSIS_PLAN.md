@@ -106,4 +106,28 @@ Immune organisation is thought to matter most in ER-negative disease. Within MET
 
 ## Amendments
 
-*(none yet)*
+### Amendment 1: phenotype → class table and cell filters (made before any model was run)
+
+This amendment is based on the phenotype labels, the `is_epithelial` flag, and the column descriptions in `SingleCellsAnnotation.xlsx`. No outcome data were linked.
+
+- **Images.** Only cells with `is_tumour == 1` (the 693 main invasive tumours) are used. Cells with `is_hotAggregate == 1` (imaging artefacts) are removed. Pixel size is 1 µm, per the annotation file.
+- **All epithelial phenotypes → Tumor:** Basal, CD15⁺, CK8-18⁺ ER^hi, CK8-18^hi CXCL12^hi, CK8-18^hi ER^lo, CK⁺ CXCL12⁺, CK^lo ER^lo, CK^lo ER^med, CK^med ER^lo, ER^hi CXCL12⁺, Ep CD57⁺, Ep Ki67⁺, HER2⁺, MHC I & II^hi, MHC I^hi CD57⁺, MHC^hi CD15⁺.
+- **Non-epithelial phenotypes:**
+
+| METABRIC phenotype | Class | Note |
+|---|---|---|
+| CD4⁺ T cells, CD8⁺ T cells, T_Reg & T_Ex | T | |
+| CD4⁺ T cells & APCs | T | mixed lineage; first-named lineage rule |
+| CD57⁺ (non-epithelial) | T | CD57 marks NK cells and terminally differentiated T cells. Basel has no NK class and its CD57⁺ lymphocytes fall in T-cell clusters, so the closest Basel class is T. This is a deviation from the "everything else → Stroma" default, declared here. |
+| B cells | B | |
+| CD38⁺ lymphocytes | B | plasma cells/plasmablasts, B lineage |
+| Macrophages, Macrophages & granulocytes, Granulocytes | Macrophage | myeloid |
+| Endothelial | Endothelial | |
+| Fibroblasts, Fibroblasts FSP1⁺, Myofibroblasts, Myofibroblasts PDPN⁺ | Stroma | |
+| Ki67⁺ (non-epithelial, lineage unassigned) | Stroma | "unassigned non-epithelial" default |
+
+The table was drafted from the first 500,000 rows. The loader raises an error if any non-epithelial phenotype in the full file is unmapped; in that case a further amendment will be added.
+
+### Amendment 2: correction to section C (made before any model was run)
+
+Section C said the linear predictor would be "standardised within each outer fold" before computing the calibration slope. That was a mistake. Standardising removes the scale of the linear predictor, which is exactly what the calibration slope measures, so the slope would reflect only discrimination. The calibration slope is computed on the **raw** out-of-fold linear predictor. Each fold's model sees features standardised on its own training data, so training-fold linear predictors are centred near 0 and pooling across folds is reasonable.

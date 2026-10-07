@@ -22,8 +22,8 @@ def signed(x: float) -> str:
     return f"{x:+.3f}"
 
 
-def cindex_table(ep: str) -> str:
-    t = pd.read_csv(RES / f"{ep}_cindex.csv")
+def cindex_table(ep: str, d: Path = RES) -> str:
+    t = pd.read_csv(d / f"{ep}_cindex.csv")
     lines = ["| Model | C-index | 95% CI | per CV repeat (seeds 0, 1, 2) |", "|---|---|---|---|"]
     for _, r in t.iterrows():
         seeds = ", ".join(f"{float(v):.3f}" for v in str(r.cindex_per_seed).split(";"))
@@ -31,16 +31,16 @@ def cindex_table(ep: str) -> str:
     return "\n".join(lines)
 
 
-def diff_table(ep: str) -> str:
-    t = pd.read_csv(RES / f"{ep}_paired_differences.csv")
+def diff_table(ep: str, d: Path = RES) -> str:
+    t = pd.read_csv(d / f"{ep}_paired_differences.csv")
     lines = ["| Comparison | ΔC | 95% CI | share of bootstrap Δ > 0 |", "|---|---|---|---|"]
     for _, r in t.iterrows():
         lines.append(f"| {r.comparison} | {signed(r.delta)} | {signed(r.ci_low)} to {signed(r.ci_high)} | {r.frac_boot_gt0:.2f} |")
     return "\n".join(lines)
 
 
-def robustness_table(ep: str) -> str:
-    t = pd.read_csv(RES / f"{ep}_robustness.csv", index_col=0)
+def robustness_table(ep: str, d: Path = RES) -> str:
+    t = pd.read_csv(d / f"{ep}_robustness.csv", index_col=0)
     lines = [
         "| Spatial model vs. clinical+composition | ΔC (3 main repeats) | ΔC over 10 CV repeats: mean ± SD [min, max] | repeats with Δ > 0 | permuted-spatial null ΔC: mean ± SD (max) | permutation p |",
         "|---|---|---|---|---|---|",

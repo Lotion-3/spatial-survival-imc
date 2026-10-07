@@ -8,6 +8,7 @@ and extract individual members.
 Usage:
     python scripts/download_data.py --list               # list record files + archive members
     python scripts/download_data.py                      # fetch needed tables into data/raw
+    python scripts/download_data.py --metabric           # also METABRIC IMC + clinical (part II)
 """
 
 from __future__ import annotations
@@ -95,9 +96,9 @@ def record_files() -> dict[str, dict]:
     }
 
 
-def open_remote_zip(info: dict) -> tuple[zipfile.ZipFile, HTTPRangeFile]:
+def open_remote_zip(info: dict, buffer_size: int = 1 << 20) -> tuple[zipfile.ZipFile, HTTPRangeFile]:
     raw = HTTPRangeFile(info["url"], info["size"])
-    buf = io.BufferedReader(raw, buffer_size=1 << 20)
+    buf = io.BufferedReader(raw, buffer_size=buffer_size)
     return zipfile.ZipFile(buf), raw
 
 
@@ -160,12 +161,59 @@ def fetch(files: dict[str, dict]) -> None:
     print(f"wrote {RAW / 'MANIFEST.json'}")
 
 
+# --------------------------------------------------------------------------- METABRIC (part II)
+
+METABRIC_RECORD = "5850952"  # Danenberg et al. 2022, CC-BY-4.0
+METABRIC_MEMBER = "toPublicRepository/SingleCells.csv"  # ~383 MB compressed, ~850 MB extracted
+RAW_MB = ROOT / "data" / "raw_metabric"
+CBIO = "https://www.cbioportal.org/api/studies/brca_metabric/clinical-data"
+
+
+def fetch_metabric() -> None:
+    RAW_MB.mkdir(parents=True, exist_ok=True)
+    with urllib.request.urlopen(f"https://zenodo.org/api/records/{METABRIC_RECORD}", timeout=60) as r:
+        f = json.load(r)["files"][0]
+    zf, raw = open_remote_zip({"url": f["links"]["self"], "size": f["size"]}, buffer_size=32 << 20)
+    zi = zf.getinfo(METABRIC_MEMBER)
+    dest = RAW_MB / "SingleCells.csv"
+    if not dest.exists() or dest.stat().st_size != zi.file_size:
+        print(f"range-extracting {METABRIC_MEMBER} ({zi.compress_size / 1e6:.0f} MB compressed)")
+        with zf.open(zi) as src, open(dest, "wb") as out:  # zipfile verifies CRC32 at EOF
+            shutil.copyfileobj(src, out, 1 << 22)
+    # Public cBioPortal clinical data: patient- and sample-level attributes, long format.
+    rows = []
+    for kind in ["PATIENT", "SAMPLE"]:
+        req = urllib.request.Request(  # cBioPortal rejects urllib's default User-Agent (403)
+            f"{CBIO}?clinicalDataType={kind}&projection=SUMMARY",
+            headers={"User-Agent": "spatialsurv/0.1 (research script)", "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=120) as r:
+            rows += json.load(r)
+    clin = {}
+    for d in rows:
+        clin.setdefault(d["patientId"], {})[d["clinicalAttributeId"]] = d["value"]
+    (RAW_MB / "metabric_clinical.json").write_text(json.dumps(clin, indent=1))
+    manifest = {
+        "SingleCells.csv": {"md5": md5(dest), "crc32": f"{zi.CRC:08x}", "source": f"zenodo {METABRIC_RECORD}::{METABRIC_MEMBER}"},
+        "metabric_clinical.json": {"md5": md5(RAW_MB / "metabric_clinical.json"), "source": CBIO,
+                                   "n_patients": len(clin)},
+    }
+    (RAW_MB / "MANIFEST.json").write_text(json.dumps(manifest, indent=2))
+    print(f"METABRIC: {len(clin)} clinical patients; wrote {RAW_MB / 'MANIFEST.json'}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--list", action="store_true", help="only list files and archive members")
+    ap.add_argument("--metabric", action="store_true", help="also fetch the METABRIC IMC cells + clinical (part II)")
     args = ap.parse_args()
     files = record_files()
-    list_all(files) if args.list else fetch(files)
+    if args.list:
+        list_all(files)
+        return
+    fetch(files)
+    if args.metabric:
+        fetch_metabric()
 
 
 if __name__ == "__main__":

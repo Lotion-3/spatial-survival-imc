@@ -33,12 +33,49 @@ class CLRTransformer(BaseEstimator, TransformerMixin):
         return clr(np.asarray(X, dtype=float), self.pseudocount)
 
 
+class ResidualizeSpatial(BaseEstimator, TransformerMixin):
+    """Replace spatial features by their residuals from a linear regression on
+    [CLR(composition counts), log(total cells)], fit on training rows only.
+
+    Input columns: the n_spatial spatial features first, then the composition counts.
+    Spatial NaNs are median-imputed (training medians) before the regression.
+    Isolates "arrangement beyond amount": the part of each spatial feature that
+    composition and image size do not explain linearly.
+    """
+
+    def __init__(self, n_spatial: int, pseudocount: float = 0.5):
+        self.n_spatial = n_spatial
+        self.pseudocount = pseudocount
+
+    def _design(self, X):
+        X = np.asarray(X, dtype=float)
+        S, C = X[:, : self.n_spatial], X[:, self.n_spatial :]
+        Z = np.c_[clr(C, self.pseudocount), np.log(C.sum(axis=1) + 1.0)]
+        return S, Z
+
+    def fit(self, X, y=None):
+        S, Z = self._design(X)
+        self.medians_ = np.nanmedian(S, axis=0)
+        self.medians_ = np.where(np.isnan(self.medians_), 0.0, self.medians_)
+        S = np.where(np.isnan(S), self.medians_, S)
+        self.s_mean_, self.z_mean_ = S.mean(axis=0), Z.mean(axis=0)
+        # CLR columns sum to zero (rank-deficient); lstsq returns the minimum-norm solution.
+        self.coef_ = np.linalg.lstsq(Z - self.z_mean_, S - self.s_mean_, rcond=None)[0]
+        return self
+
+    def transform(self, X):
+        S, Z = self._design(X)
+        S = np.where(np.isnan(S), self.medians_, S)
+        return S - self.s_mean_ - (Z - self.z_mean_) @ self.coef_
+
+
 @dataclass
 class FeatureSet:
     name: str
     clinical: list[str]
     composition: list[str] = field(default_factory=list)
     spatial: list[str] = field(default_factory=list)
+    residualize_spatial: bool = False  # part II section B
 
     @property
     def columns(self) -> list[str]:
@@ -49,7 +86,12 @@ def make_preprocessor(fs: FeatureSet, pseudocount: float) -> ColumnTransformer:
     blocks = [("clin", make_pipeline(SimpleImputer(strategy="median", keep_empty_features=True), StandardScaler()), fs.clinical)]
     if fs.composition:
         blocks.append(("comp", make_pipeline(CLRTransformer(pseudocount), StandardScaler()), fs.composition))
-    if fs.spatial:
+    if fs.spatial and fs.residualize_spatial:
+        if not fs.composition:
+            raise ValueError("residualising spatial features needs composition columns")
+        blocks.append(("spat", make_pipeline(ResidualizeSpatial(len(fs.spatial), pseudocount), StandardScaler()),
+                       fs.spatial + fs.composition))
+    elif fs.spatial:
         blocks.append(("spat", make_pipeline(SimpleImputer(strategy="median", keep_empty_features=True), StandardScaler()), fs.spatial))
     # Column order of the output = clinical, composition, spatial (relied on for penalty_factor).
     return ColumnTransformer(blocks, remainder="drop", verbose_feature_names_out=False)
