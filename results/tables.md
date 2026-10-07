@@ -14,6 +14,9 @@
 - spatial_missing: {'enrich_Tumor__Tumor': 1, 'enrich_Tumor__T': 9, 'enrich_Tumor__Macrophage': 11, 'enrich_Tumor__B': 108, 'enrich_Tumor__Stroma': 1, 'enrich_Tumor__Endothelial': 24, 'enrich_T__Macrophage': 17, 'enrich_T__B': 107, 'enrich_Stroma__T': 8, 'logoe_Tumor__Tumor': 1, 'logoe_Tumor__T': 9, 'logoe_Tumor__Macrophage': 11, 'logoe_Tumor__B': 108, 'logoe_Tumor__Stroma': 1, 'logoe_Tumor__Endothelial': 24, 'logoe_T__Macrophage': 17, 'logoe_T__B': 107, 'logoe_Stroma__T': 8}
 - n_composition_features: 27
 - n_spatial_features: 11
+- grade1_patients: 38
+- grade1_dss_events: 2
+- pM1_patients: 7
 
 ## Overall survival (primary)
 
@@ -131,4 +134,4 @@
 - clinical-only model: log-rank p = 8.3e-10
 - patients assigned to the same risk half by both: 94%
 
-runtime_seconds: 365.1
+runtime_seconds: 383.1

@@ -36,7 +36,10 @@
       "logoe_Stroma__T": 8
     },
     "n_composition_features": 27,
-    "n_spatial_features": 11
+    "n_spatial_features": 11,
+    "grade1_patients": 38,
+    "grade1_dss_events": 2,
+    "pM1_patients": 7
   },
   "os": {
     "cindex": [
@@ -446,5 +449,5 @@
     "numpy": "2.5.3",
     "pandas": "2.3.3"
   },
-  "runtime_seconds": 365.1
+  "runtime_seconds": 383.1
 }

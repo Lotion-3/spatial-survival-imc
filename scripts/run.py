@@ -100,6 +100,10 @@ def build_features(cfg: dict, recompute_spatial: bool = False) -> tuple[pd.DataF
         spatial_missing={c: int(X[c].isna().sum()) for c in ALL_SPATIAL_COLS if X[c].isna().any()},
         n_composition_features=counts.shape[1],
         n_spatial_features=len(SPATIAL_COLS),
+        # sparse clinical categories behind the encoding decisions in README section 7
+        grade1_patients=int((X["grade"] == 1).sum()),
+        grade1_dss_events=int(X.loc[X["grade"] == 1, "event_dss"].sum()),
+        pM1_patients=int((X["pM"] == 1).sum()),
     )
     return X, list(counts.columns), cohort
 

@@ -17,6 +17,8 @@ def test_readme_tables_come_from_results():
     rows = [l for l in readme if l.startswith("| ") and not set(l) <= set("|- ")]
     # The data-files table in section 2 describes downloads, not results.
     rows = [r for r in rows if ".zip" not in r and not r.startswith("| File |")]
+    # Layout tables (side-by-side figures) and text-only header rows carry no numbers.
+    rows = [r for r in rows if "![" not in r and any(ch.isdigit() for ch in r)]
     assert rows, "no result tables found in README"
     missing = [r for r in rows if r not in generated]
     assert not missing, "README rows not in results/tables.md:\n" + "\n".join(missing)
