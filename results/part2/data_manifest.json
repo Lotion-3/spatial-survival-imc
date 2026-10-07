@@ -1,0 +1,12 @@
+{
+  "SingleCells.csv": {
+    "md5": "b4b50f7e798f040623c74cd6a071a5b0",
+    "crc32": "df6c83b1",
+    "source": "zenodo 5850952::toPublicRepository/SingleCells.csv"
+  },
+  "metabric_clinical.json": {
+    "md5": "a12bf0d388ba1e079505f1bc7fd1a47d",
+    "source": "https://www.cbioportal.org/api/studies/brca_metabric/clinical-data",
+    "n_patients": 2509
+  }
+}

@@ -38,7 +38,23 @@ def celesta_tables() -> list[str]:
         feat.append(f"| `{r.feature}` | {r.n_images} | {r.spearman:+.2f} |")
     nl = "\n"
     return ["## CELESTA-Lite vs published labels", "", nl.join(rows), "", nl.join(idx), "", nl.join(cls), "",
-            nl.join(feat)]
+            nl.join(feat), "", "## CELESTA-Lite: reference vs posterior expression probabilities (v1 signature)", "",
+            ep_method_table()]
+
+
+def ep_method_table() -> str:
+    lines = ["| EP method | artifact-filtered | cells assigned | agreement (assigned) | κ (assigned) | CELESTA T cells | T recall "
+             "| mean CD3 EP, published T | mean CD3 EP, published Tumor |",
+             "|---|---|---|---|---|---|---|---|---|"]
+    for run, lab in [("v1_reference_ep", "reference (sigmoid of x − crossing point)"), ("v1", "posterior (this port)")]:
+        s = json.loads((CEL / run / "summary.json").read_text())
+        a = s["celesta_vs_published"]
+        pc = pd.read_csv(CEL / run / "per_class_celesta.csv").set_index("cls")
+        ep = pd.read_csv(CEL / run / "mean_ep_by_published_class.csv").set_index("published")
+        lines.append(f"| {lab} | {s['artifact_frac']:.1%} | {a['coverage']:.1%} | {a['agreement_assigned']:.3f} | "
+                     f"{a['kappa_assigned']:.3f} | {pc.loc['T', 'celesta_n']:,} | {pc.loc['T', 'recall']:.2f} | "
+                     f"{ep.loc['T', 'CD3']:.2f} | {ep.loc['Tumor', 'CD3']:.2f} |")
+    return "\n".join(lines)
 
 
 def transfer_table(ep: str) -> str:

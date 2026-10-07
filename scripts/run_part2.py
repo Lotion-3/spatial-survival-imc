@@ -49,6 +49,7 @@ M_SPAT, M_OE, M_RES = "+spatial (z)", "+spatial (log O/E)", "+spatial (residuali
 M_CEL = "+spatial (log O/E, CELESTA labels)"  # Amendment 3, section E
 CELESTA_LABELS = ROOT / "results" / "celesta" / "v1" / "cell_labels.csv.gz"
 CEL_COLS = [f"cel_{c}" for c in SPATIAL_COLS_LOGOE]
+TRANSFER_XLABEL = "Harrell's C-index on METABRIC (one external evaluation; 95% patient-bootstrap CI)"
 
 
 def slug(s: str) -> str:
@@ -325,7 +326,7 @@ def main() -> None:
     for ep, lab in [("os", "OS"), ("dss", "DSS")]:
         t = pd.read_csv(OUT / f"transfer_{ep}_cindex.csv")
         cindex_dotplot(t, FIG / f"part2_transfer_{ep}.png",
-                       f"Trained on Basel, tested on METABRIC ({lab}, 180-month horizon)")
+                       f"Trained on Basel, tested on METABRIC ({lab}, 180-month horizon)", xlabel=TRANSFER_XLABEL)
 
     summary["runtime_seconds"] = round(time.time() - t0, 1)
     (OUT / "summary.json").write_text(json.dumps(summary, indent=2, default=float))

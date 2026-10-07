@@ -1,0 +1,8 @@
+,celesta Tumor,celesta T,celesta B,celesta Macrophage,celesta Endothelial,celesta Stroma,celesta Unknown
+published Tumor,518335,87,965,1845,424,10348,69648
+published T,3832,344,744,6902,358,3405,63392
+published B,678,62,19552,368,1317,1308,16299
+published Macrophage,4638,14,415,8609,501,1561,35099
+published Endothelial,1834,8,265,241,6111,12726,27323
+published Stroma,23349,60,963,1977,1979,33690,185390
+published Unknown,0,0,0,0,0,0,0

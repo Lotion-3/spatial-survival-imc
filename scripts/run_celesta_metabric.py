@@ -83,6 +83,9 @@ _V2 = _V1 | {
     "PDPN+ fibroblast": [0, 0, NA, 0, 0, NA, NA, NA, 1],
 }
 SIGNATURES = {"v1": _signature(_V1), "v2": _signature(_V2)}
+# run name -> (signature, expression-probability method). v1_reference_ep reproduces the
+# reference implementation's slope-1 sigmoid EP to document why it fails on dim IMC channels.
+RUNS = {"v1": ("v1", "posterior"), "v2": ("v2", "posterior"), "v1_reference_ep": ("v1", "reference")}
 SIGNATURE = SIGNATURES["v2"]  # superset of markers, used for loading
 TO_COARSE = {"Tumor": "Tumor", "T cell": "T", "B cell": "B", "Macrophage": "Macrophage",
              "Endothelial": "Endothelial", "Myofibroblast": "Stroma", "Fibroblast": "Stroma",
@@ -158,7 +161,8 @@ def main(version: str) -> None:
     out = OUT / version
     out.mkdir(parents=True, exist_ok=True)
     cfg = CONFIG
-    sig = Signature(SIGNATURES[version])
+    sig_name, ep_method = RUNS[version]
+    sig = Signature(SIGNATURES[sig_name])
     c = load_cells()
     print(f"{len(c)} cells, {c['core'].nunique()} images ({time.time() - t0:.0f}s)")
 
@@ -168,7 +172,9 @@ def main(version: str) -> None:
     X = arcsinh_transform(c[sig.markers], cfg["cofactor"])
     sub = X.sample(n=min(cfg["gmm_subsample"], len(X)), random_state=cfg["seed"])
     models = fit_marker_models(sub)
-    ep = expression_probabilities(X, models, method=cfg["ep_method"])
+    ep = expression_probabilities(X, models, method=ep_method)
+    # diagnostic: mean EP of each marker within each published class
+    ep.groupby(c["published"]).mean().to_csv(out / "mean_ep_by_published_class.csv")
     pd.DataFrame([dict(marker=m.marker, mean_low=m.means[0], mean_high=m.means[1], var_low=m.variances[0],
                        var_high=m.variances[1], critical_point=m.critical_point,
                        frac_cells_above=float((X[m.marker] > m.critical_point).mean())) for m in models.values()]
@@ -187,7 +193,8 @@ def main(version: str) -> None:
     print(f"CELESTA done ({time.time() - t0:.0f}s)")
 
     # ---- agreement with the published phenotypes
-    summary = {"config": cfg, "signature_version": version, "signature": SIGNATURES[version].replace({np.nan: None}).to_dict(orient="index"),
+    summary = {"config": cfg | {"ep_method": ep_method}, "run": version, "signature_version": sig_name,
+               "signature": SIGNATURES[sig_name].replace({np.nan: None}).to_dict(orient="index"),
                "n_cells": int(len(c)), "n_images": int(c["core"].nunique()),
                "artifact_frac": float(c["artifact"].mean()), "anchor_frac": float(c["anchor"].mean())}
     summary["celesta_vs_published"] = agreement(c["published"], c["celesta_coarse"])
@@ -245,5 +252,5 @@ def main(version: str) -> None:
 if __name__ == "__main__":
     import sys
 
-    for v in (sys.argv[1:] or list(SIGNATURES)):
+    for v in (sys.argv[1:] or list(RUNS)):
         main(v)

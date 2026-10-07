@@ -34,7 +34,10 @@ plt.rcParams.update(
 )
 
 
-def cindex_dotplot(table: pd.DataFrame, out: Path, title: str) -> None:
+CV_XLABEL = "Harrell's C-index (pooled out-of-fold, mean of 3 CV repeats; 95% bootstrap CI)"
+
+
+def cindex_dotplot(table: pd.DataFrame, out: Path, title: str, xlabel: str = CV_XLABEL) -> None:
     """table: model, cindex, ci_low, ci_high (top-to-bottom in given order)."""
     t = table.iloc[::-1].reset_index(drop=True)
     fig, ax = plt.subplots(figsize=(6.4, 0.55 * len(t) + 1.2))
@@ -46,7 +49,7 @@ def cindex_dotplot(table: pd.DataFrame, out: Path, title: str) -> None:
         ax.plot(r.cindex, i, "o", ms=8, color=c, mec=SURFACE, mew=2, zorder=3)
         ax.text(r.ci_high + 0.008, i, f"{r.cindex:.3f}", va="center", color=INK2, fontsize=9)
     ax.set_yticks(range(len(t)), t["model"])
-    ax.set_xlabel("Harrell's C-index (pooled out-of-fold, mean of 3 CV repeats; 95% bootstrap CI)")
+    ax.set_xlabel(xlabel)
     lo = min(0.4, t.ci_low.min() - 0.02)
     ax.set_xlim(lo, max(0.85, t.ci_high.max() + 0.06))
     ax.set_title(title, loc="left", color=INK, fontsize=11)

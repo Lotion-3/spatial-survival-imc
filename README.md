@@ -1,28 +1,47 @@
 # Do spatial tumor-microenvironment features add prognostic value in breast cancer?
 
-A methods note on the Jackson et al. 2020 (*Nature*) imaging mass cytometry (IMC) breast cancer cohort. The analysis asks whether per-patient cell-type composition, and then spatial-interaction features, improve out-of-fold survival prediction **beyond standard clinical variables**. CPU only; the full pipeline reruns in a few minutes from one command.
+A methods note on two imaging mass cytometry (IMC) breast cancer cohorts: Basel (Jackson et al. 2020, *Nature*) and METABRIC (Danenberg et al. 2022, *Nature Genetics*). The analysis asks whether per-patient cell-type composition, and then spatial-interaction features, improve out-of-fold survival prediction **beyond standard clinical variables**.
+- **Part I:** discovery in Basel.
+- **Part II:** a pre-registered external replication in METABRIC.
+- **Part III:** re-typing the METABRIC cells with **CELESTA-Lite**, a Python port of the CELESTA spatial cell-typing engine, to see whether better-informed cell labels change the answer.
 
-![Headline: C-index by feature set, and the added value of spatial features against a permutation null](figures/headline.png)
+CPU only. Each part reruns from one command.
+
+| Basel (discovery) | METABRIC (pre-registered replication) |
+|:---:|:---:|
+| ![Basel headline](figures/headline.png) | ![METABRIC headline](figures/part2_metabric_headline.png) |
 
 **Findings**
 
-1. **No detectable added value on the primary endpoint (overall survival, N = 280, 79 deaths).** Clinical variables alone give C = 0.741. Adding composition and spatial features reaches 0.750.
-   - The spatial-over-composition gain is +0.002 (95% CI −0.005 to +0.008).
-   - Across 10 different CV partitions it averages −0.002.
-   - It sits inside the null obtained by shuffling the spatial features across patients (permutation p = 0.667).
-   - The cohort could have detected a gain of roughly 0.010–0.014 C (§5.4), so any real gain is likely smaller than that.
-2. **Breast-cancer-specific survival (secondary) shows a weak, unstable hint, not a result.** One post-hoc, size-robust variant of the spatial features gains +0.011 ± 0.017 across 10 CV repeats, with permutation p = 0.048. This does not survive the multiplicity of comparisons examined. It is a hypothesis for an external cohort.
-3. **Two popular "spatial" summaries are mostly composition in disguise.** Across images, the tumor–immune mixing score has Spearman ρ = −0.89 with immune-cell fraction, and the immune fraction among tumor cells' neighbours has ρ = +0.92. Permutation z-scores also track image size (|ρ| up to 0.55). Spatial features need to be checked against composition and size before they can be credited with independent information (§5.5).
-4. **The prognostic signal is clinical.** The Kaplan–Meier split of the best model (log-rank p = 6.5e-09) is matched by the clinical-only model (p = 8.3e-10), and the two put 94% of patients in the same risk half.
+1. **Spatial features add no detectable prognostic value, in either cohort.**
+   - **Basel**, overall survival (79 deaths): +0.002 C over composition (95% CI −0.005 to +0.008).
+   - **METABRIC** (231 deaths and 156 breast-cancer deaths within 15 years): every spatial variant lands within ±0.006 of the composition model. Every 95% CI upper bound is at most +0.005, so gains larger than that are ruled out (§P2.2).
+   - Composition doesn't help either: −0.007 in METABRIC.
+2. **The one lead from Basel failed its pre-registered test.** Basel suggested a gain for size-robust spatial enrichment on breast-cancer-specific survival.
+   - Hypothesis H1 and its decision rule were committed to git before any METABRIC outcome was linked.
+   - Result in METABRIC: ΔC = −0.004 (95% CI −0.009 to +0.001), permutation p = 0.810. **Verdict: refuted.**
+3. **Two popular "spatial" summaries are mostly composition in disguise.**
+   - Across Basel images, the tumor–immune mixing score has ρ = −0.89 with immune-cell fraction, and the immune fraction among tumor cells' neighbours has ρ = +0.92.
+   - Permutation z-scores track image size (|ρ| up to 0.55).
+   - Removing composition and size from the spatial features, in-fold, does not reveal hidden signal in METABRIC (+0.002 for OS, −0.004 for DSS).
+4. **The signal is clinical, and it transfers.**
+   - A clinical Cox model trained on Basel reaches C = 0.708 on METABRIC, matching a clinical model cross-validated within METABRIC itself (0.704).
+   - Adding Basel-trained composition *hurts* transfer (−0.025, 95% CI −0.044 to −0.006).
+   - Calibration slopes show the penalised omics models are overfit (0.76–0.85 in METABRIC), while the heavily ridge-shrunk clinical model is under-confident (1.37–1.64).
+5. **Re-typing the cells with CELESTA-Lite changes the cell labels, not the conclusion.**
+   - The port's spatial step improves agreement with the published labels for the ambiguous cells it assigns (0.589 vs. 0.398 for markers alone).
+   - Overall agreement is moderate (κ = 0.476).
+   - Spatial features computed from CELESTA-Lite labels add nothing either (OS +0.000, DSS −0.006).
 
 **What guards the result:**
 - Nested CV, split by patient.
 - Tests that spy on every model fit and fail if any fit sees a held-out patient.
-- A shared patient bootstrap for paired model comparisons.
-- 10 CV repeats and a permutation null, because the bootstrap alone ignores CV-partition variability.
-- A test that every table row in this README is reproduced verbatim by the analysis code from saved results.
+- A shared patient bootstrap, plus 10 CV repeats and a permutation null.
+- A pre-registered external replication, with amendments time-stamped in git.
+- Dry runs on outcome-shuffled data, so bugs were fixed without seeing results.
+- A test that every table row in this README is reproduced verbatim from saved results.
 
-All deviations from the original plan are listed in §7.
+Deviations are listed in §7 (part I) and in [ANALYSIS_PLAN.md](ANALYSIS_PLAN.md) amendments (part II).
 
 ---
 
@@ -255,15 +274,250 @@ Penalty choice and sparsity across the 15 outer folds:
 2. **Added after seeing first results:** the log O/E spatial variant, the 10 CV repeats, the permutation null, the detectable-effect calculation, and the composition/size confound check. They are robustness and sensitivity analyses and do not redefine the primary model. They were added because the first DSS result looked too good to trust.
 3. **DSS** was agreed as a secondary endpoint before modelling.
 
+## Part II: pre-registered external replication in METABRIC
+
+### P2.1 Design
+
+The analysis plan, [ANALYSIS_PLAN.md](ANALYSIS_PLAN.md), was committed to git before any METABRIC outcome was linked to features. Three amendments followed, each committed before outcomes were linked and each giving its reason:
+1. the cell-class mapping;
+2. a correction to how the calibration slope is defined;
+3. an ER-negative column rule and the CELESTA-Lite labels.
+
+Before the real run, every code path was dry-run on data with **outcomes shuffled across patients**. In that run all models sat near C = 0.5, so the bugs it surfaced were fixed without any real result being visible.
+
+- **Data.** METABRIC IMC single cells (Zenodo 10.5281/zenodo.5850952; one 383 MB member range-extracted from a 6.2 GB archive) and public cBioPortal clinical data (`brca_metabric`).
+- **Cells.** Invasive-tumour images only; imaging-artefact cells removed.
+- **Cohort.** Patients with at least 500 cells and some epithelium: **N = 492** (543 images, 904,202 cells).
+- **Endpoints.** OS and breast-cancer-specific survival (DSS), administratively censored at 15 years, the horizon fixed in the plan. That leaves 231 OS events and 156 DSS events.
+- **Clinical variables.** The same 7 as Basel. pN is derived from the positive-node count using the AJCC bands.
+- **Cell classes.** The published phenotypes are mapped to Basel's 6 coarse classes; the table is in Amendment 1.
+- **Models and protocol.** Identical to part I.
+
+### P2.2 Within-METABRIC replication (A1) and the confirmatory test (H1)
+
+Overall survival:
+
+| Model | C-index | 95% CI | per CV repeat (seeds 0, 1, 2) |
+|---|---|---|---|
+| clinical | 0.704 | 0.670 to 0.735 | 0.711, 0.695, 0.705 |
+| clinical+composition | 0.697 | 0.662 to 0.730 | 0.700, 0.688, 0.702 |
+| +spatial (z) | 0.697 | 0.662 to 0.729 | 0.701, 0.688, 0.701 |
+| +spatial (log O/E) | 0.698 | 0.663 to 0.730 | 0.703, 0.692, 0.700 |
+| +spatial (residualised) | 0.699 | 0.663 to 0.731 | 0.703, 0.691, 0.703 |
+| +spatial (log O/E, CELESTA labels) | 0.697 | 0.662 to 0.729 | 0.698, 0.690, 0.702 |
+| random baseline | 0.497 | 0.475 to 0.520 | 0.495, 0.487, 0.510 |
+
+| Comparison | ΔC | 95% CI | share of bootstrap Δ > 0 |
+|---|---|---|---|
+| clinical+composition minus clinical | -0.007 | -0.020 to +0.007 | 0.16 |
+| +spatial (z) minus clinical+composition | -0.000 | -0.003 to +0.003 | 0.49 |
+| +spatial (log O/E) minus clinical+composition | +0.001 | -0.002 to +0.005 | 0.79 |
+| +spatial (residualised) minus clinical+composition | +0.002 | -0.001 to +0.005 | 0.90 |
+| +spatial (log O/E, CELESTA labels) minus clinical+composition | +0.000 | -0.003 to +0.003 | 0.49 |
+
+Breast-cancer-specific survival:
+
+| Model | C-index | 95% CI | per CV repeat (seeds 0, 1, 2) |
+|---|---|---|---|
+| clinical | 0.708 | 0.669 to 0.746 | 0.700, 0.716, 0.709 |
+| clinical+composition | 0.713 | 0.672 to 0.750 | 0.702, 0.718, 0.718 |
+| +spatial (z) | 0.710 | 0.669 to 0.747 | 0.701, 0.715, 0.713 |
+| +spatial (log O/E) | 0.709 | 0.667 to 0.747 | 0.702, 0.709, 0.716 |
+| +spatial (residualised) | 0.708 | 0.667 to 0.746 | 0.702, 0.707, 0.716 |
+| +spatial (log O/E, CELESTA labels) | 0.707 | 0.665 to 0.746 | 0.701, 0.711, 0.709 |
+| random baseline | 0.495 | 0.469 to 0.522 | 0.491, 0.497, 0.497 |
+
+| Comparison | ΔC | 95% CI | share of bootstrap Δ > 0 |
+|---|---|---|---|
+| clinical+composition minus clinical | +0.004 | -0.010 to +0.020 | 0.74 |
+| +spatial (z) minus clinical+composition | -0.003 | -0.008 to +0.002 | 0.14 |
+| +spatial (log O/E) minus clinical+composition | -0.004 | -0.009 to +0.001 | 0.06 |
+| +spatial (residualised) minus clinical+composition | -0.004 | -0.011 to +0.002 | 0.09 |
+| +spatial (log O/E, CELESTA labels) minus clinical+composition | -0.006 | -0.011 to -0.001 | 0.01 |
+
+**H1, the only confirmatory test in part II.** Under the pre-registered rule, H1 is supported only if (a) the CI lies above 0, (b) the permutation p ≤ 0.05, and (c) the mean over 10 CV repeats is > 0. It is refuted if ΔC ≤ 0.
+
+| ΔC (log O/E minus composition, DSS) | 95% CI | permutation p | mean ΔC over 10 CV repeats | (a) CI > 0 | (b) p ≤ 0.05 | (c) repeat mean > 0 | verdict |
+|---|---|---|---|---|---|---|---|
+| -0.004 | -0.009 to +0.001 | 0.810 | -0.001 | no | no | no | **refuted** |
+
+The Basel DSS lead (part I, §5.2) did not replicate. Every spatial variant, including the residualised and CELESTA-label versions, has its 10-repeat deltas inside the shuffled-feature null (headline figure, right). The CELESTA-label model's DSS bootstrap CI excludes 0 *below* zero; adding those features slightly hurt.
+
+<details>
+<summary>CV-repeat and permutation-null details for METABRIC (click to expand)</summary>
+
+OS:
+
+| Spatial model vs. clinical+composition | ΔC (3 main repeats) | ΔC over 10 CV repeats: mean ± SD [min, max] | repeats with Δ > 0 | permuted-spatial null ΔC: mean ± SD (max) | permutation p |
+|---|---|---|---|---|---|
+| +spatial (z) | -0.000 | +0.001 ± 0.003 [-0.004, +0.006] | 4/10 | +0.001 ± 0.001 (+0.004) | 0.857 |
+| +spatial (log O/E) | +0.001 | +0.001 ± 0.003 [-0.004, +0.004] | 5/10 | +0.001 ± 0.001 (+0.003) | 0.286 |
+| +spatial (residualised) | +0.002 | +0.001 ± 0.003 [-0.007, +0.005] | 6/10 | +0.001 ± 0.001 (+0.002) | 0.190 |
+| +spatial (log O/E, CELESTA labels) | +0.000 | +0.000 ± 0.002 [-0.002, +0.004] | 5/10 | +0.001 ± 0.001 (+0.004) | 0.810 |
+
+DSS:
+
+| Spatial model vs. clinical+composition | ΔC (3 main repeats) | ΔC over 10 CV repeats: mean ± SD [min, max] | repeats with Δ > 0 | permuted-spatial null ΔC: mean ± SD (max) | permutation p |
+|---|---|---|---|---|---|
+| +spatial (z) | -0.003 | -0.002 ± 0.005 [-0.008, +0.011] | 2/10 | -0.002 ± 0.002 (+0.003) | 0.762 |
+| +spatial (log O/E) | -0.004 | -0.001 ± 0.007 [-0.009, +0.016] | 3/10 | -0.002 ± 0.003 (+0.003) | 0.810 |
+| +spatial (residualised) | -0.004 | +0.000 ± 0.006 [-0.011, +0.009] | 5/10 | -0.002 ± 0.002 (+0.001) | 0.857 |
+| +spatial (log O/E, CELESTA labels) | -0.006 | -0.001 ± 0.006 [-0.010, +0.008] | 5/10 | -0.002 ± 0.002 (+0.001) | 0.857 |
+
+</details>
+
+### P2.3 Transfer: trained on Basel, tested once on METABRIC (A2)
+
+These models use only features that exist in both cohorts, so composition is the 6 coarse classes. Scalers and imputers were fit on Basel only.
+
+OS:
+
+| Model (trained on Basel) | external C-index on METABRIC | 95% CI |
+|---|---|---|
+| clinical | 0.708 | 0.674 to 0.739 |
+| clinical+composition | 0.683 | 0.649 to 0.717 |
+| +spatial (z) | 0.684 | 0.651 to 0.717 |
+| +spatial (log O/E) | 0.684 | 0.650 to 0.717 |
+
+| Transfer comparison | ΔC | 95% CI | share of bootstrap Δ > 0 |
+|---|---|---|---|
+| clinical+composition minus clinical | -0.025 | -0.044 to -0.006 | 0.00 |
+| +spatial (z) minus clinical+composition | +0.001 | -0.002 to +0.005 | 0.73 |
+| +spatial (log O/E) minus clinical+composition | +0.000 | -0.006 to +0.007 | 0.55 |
+
+DSS:
+
+| Model (trained on Basel) | external C-index on METABRIC | 95% CI |
+|---|---|---|
+| clinical | 0.702 | 0.661 to 0.738 |
+| clinical+composition | 0.689 | 0.646 to 0.728 |
+| +spatial (z) | 0.686 | 0.644 to 0.724 |
+| +spatial (log O/E) | 0.688 | 0.646 to 0.727 |
+
+| Transfer comparison | ΔC | 95% CI | share of bootstrap Δ > 0 |
+|---|---|---|---|
+| clinical+composition minus clinical | -0.013 | -0.023 to -0.003 | 0.01 |
+| +spatial (z) minus clinical+composition | -0.003 | -0.008 to +0.002 | 0.14 |
+| +spatial (log O/E) minus clinical+composition | -0.001 | -0.014 to +0.012 | 0.44 |
+
+- **The clinical model transfers intact.** Its external C equals what METABRIC achieves internally.
+- **Basel composition does not transfer.** Adding it costs 0.025 (OS) and 0.013 (DSS), with CIs excluding 0. The likely reasons are that the coarse classes come from different panels and phenotyping pipelines in the two studies, and that composition coefficients learned on 280 patients are partly noise.
+- **Spatial features neither help nor hurt transfer.**
+
+### P2.4 Calibration and time-dependent AUC (C)
+
+The calibration slope regresses the outcome on the out-of-fold linear predictor (1 is ideal; < 1 means overfit, too-extreme predictions). Time-dependent AUC is cumulative/dynamic, with IPCW.
+
+METABRIC, OS:
+
+| Model | calibration slope (95% CI) | AUC at 60 months | AUC at 120 months |
+|---|---|---|---|
+| clinical | 1.37 (1.08 to 2.17) | 0.76 (0.71 to 0.81) | 0.76 (0.71 to 0.80) |
+| clinical+composition | 0.76 (0.62 to 0.98) | 0.75 (0.70 to 0.80) | 0.75 (0.70 to 0.80) |
+| +spatial (z) | 0.77 (0.62 to 0.99) | 0.75 (0.69 to 0.80) | 0.75 (0.70 to 0.80) |
+| +spatial (log O/E) | 0.77 (0.63 to 0.98) | 0.75 (0.70 to 0.80) | 0.75 (0.70 to 0.80) |
+| +spatial (residualised) | 0.77 (0.63 to 1.00) | 0.75 (0.70 to 0.80) | 0.75 (0.71 to 0.80) |
+| +spatial (log O/E, CELESTA labels) | 0.76 (0.62 to 0.99) | 0.75 (0.70 to 0.79) | 0.75 (0.70 to 0.80) |
+| random baseline | -0.04 (-0.11 to 0.04) | 0.51 (0.48 to 0.54) | 0.49 (0.45 to 0.52) |
+
+METABRIC, DSS:
+
+| Model | calibration slope (95% CI) | AUC at 60 months | AUC at 120 months |
+|---|---|---|---|
+| clinical | 1.64 (1.38 to 2.02) | 0.78 (0.72 to 0.83) | 0.73 (0.67 to 0.78) |
+| clinical+composition | 0.85 (0.65 to 1.08) | 0.78 (0.73 to 0.83) | 0.74 (0.69 to 0.79) |
+| +spatial (z) | 0.81 (0.62 to 1.02) | 0.78 (0.73 to 0.82) | 0.74 (0.68 to 0.79) |
+| +spatial (log O/E) | 0.82 (0.63 to 1.04) | 0.78 (0.73 to 0.83) | 0.74 (0.68 to 0.78) |
+| +spatial (residualised) | 0.81 (0.63 to 1.03) | 0.78 (0.72 to 0.82) | 0.74 (0.68 to 0.78) |
+| +spatial (log O/E, CELESTA labels) | 0.81 (0.62 to 1.05) | 0.77 (0.72 to 0.82) | 0.73 (0.68 to 0.78) |
+| random baseline | -0.03 (-0.13 to 0.06) | 0.50 (0.46 to 0.53) | 0.48 (0.44 to 0.52) |
+
+- **Time-dependent AUC** tells the same story as Harrell's C: no layer improves on clinical.
+- **Calibration** separates the models.
+  - The omics models (slope ≈ 0.8) are mildly overfit: the elastic net keeps clinical columns unpenalised and adds noisy omics terms.
+  - The clinical ridge model is *under*-confident (slope 1.37–1.64). Its inner CV often picks a very large ridge penalty, sometimes at the edge of the grid (part I, §9). That shrinks the linear predictor without changing its ranking, which is why discrimination is unaffected.
+  - Basel shows the same pattern (generated tables: `results/part2/tables.md`, section C).
+- **Practical note:** a discrimination-only comparison would have missed both problems.
+
+### P2.5 Composition-conditioned ("residualised") spatial features (B) and the ER-negative subgroup (D)
+
+- **Residualised spatial features.** Each spatial feature is replaced by its residual after regression on CLR composition and log cell count, fit in-fold (`ResidualizeSpatial`, unit-tested to remove a planted composition effect and keep a planted arrangement effect).
+  - In METABRIC (pre-registered secondary): no gain (tables above).
+  - In Basel (exploratory, since those data had already been seen): the DSS gain is +0.022 on the 3 main repeats but +0.001 ± 0.022 across 10 repeats. This repeats the part I pattern of a favourable partition, not a signal.
+- **ER-negative subgroup** (exploratory, gated on ≥ 40 DSS events; 106 patients, 48 events). ER and PR were dropped as near-constant (Amendment 3a).
+  - For DSS, z-score spatial features gain +0.036 on the 3 main repeats and +0.027 ± 0.026 across 10 repeats (9/10 positive), with permutation p = 0.095.
+  - This is the only setting in the study where spatial features lean consistently positive, and immune organisation is biologically most plausible in ER-negative disease.
+  - It is exploratory, one of many subgroup comparisons, and does not reach the permutation threshold, so it is reported as a lead and not a finding. Full tables are in `results/part2/tables.md`.
+
+## Part III: CELESTA-Lite, spatially informed cell typing
+
+[CELESTA](https://doi.org/10.1038/s41592-022-01498-z) (Zhang et al., *Nature Methods* 2022) assigns cell types from marker expression and, for ambiguous cells, from the types of their spatial neighbours (a Potts-model Markov random field). `src/celesta_lite/` is a vectorised Python port that follows the authors' reference R code (plevritis-lab/CELESTA):
+- **Marker probabilities:** an equal-weight two-component mixture per marker.
+- **Anchor cells:** cells assigned from markers alone (high markers EP ≥ 0.7, low markers EP ≤ 0.9).
+- **Index cells:** the rest, assigned by a mean-field update u_ik ∝ exp(F_ik) · exp(β_ik Σ_{j∈kNN(i), s_j=k} p_jk), with β_ik = 5(1 − d_ik/h).
+- **Signature updating** toward the cells already assigned.
+- **Convergence** when fewer than 1% of cells change per iteration.
+
+It is independent of, and not endorsed by, the original authors.
+
+**Troubleshooting that mattered:**
+1. **Anchor threshold.** A first version, built from the paper text, found zero anchor cells: it required a cell-type probability ≥ 0.5. The reference code's default threshold is 0.
+2. **Marker-probability scale.** The reference maps expression to EP with a slope-1 sigmoid of (x − crossing point). That suits CODEX intensities, which span several arcsinh units. On METABRIC's dim IMC channels the sigmoid is nearly flat: CD3's two mixture components sit only 0.15 arcsinh units apart (`results/celesta/v1/marker_models.csv`). The port adds a scale-free option, the mixture posterior P(high | x) made monotone around the crossing point, and uses it here. The reference method remains the library default. Both were run on all cells with the v1 signature:
+
+| EP method | artifact-filtered | cells assigned | agreement (assigned) | κ (assigned) | CELESTA T cells | T recall | mean CD3 EP, published T | mean CD3 EP, published Tumor |
+|---|---|---|---|---|---|---|---|---|
+| reference (sigmoid of x − crossing point) | 24.3% | 62.8% | 0.876 | 0.628 | 575 | 0.00 | 0.16 | 0.09 |
+| posterior (this port) | 4.9% | 92.2% | 0.673 | 0.476 | 79,788 | 0.33 | 0.71 | 0.47 |
+
+   With the reference EP, a quarter of all cells fall to the artifact filter (every marker EP below 0.4, or every one above 0.9), and the method finds almost no T cells. Its higher agreement comes from abstaining: it labels only the cells whose panCK or CD20 signal is unambiguous. The posterior EP restores a usable CD3 contrast (0.71 vs. 0.47), at the price of lower agreement on a much larger set of cells. Reproduce with the `v1_reference_ep` run.
+
+![CELESTA-Lite example core](figures/celesta_example_core_v1.png)
+
+**Applied to all 1,066,966 METABRIC tumour cells** (cohort-level marker mixtures, then the MRF per image). It runs in about 2 minutes on a laptop. Agreement is measured against the published phenotypes, which are themselves clustering output, so this is concordance and not accuracy:
+
+| Signature | Labelling | cells assigned | agreement (assigned cells) | Cohen's κ (assigned cells) |
+|---|---|---|---|---|
+| v1 | markers only (argmax score) | 95.1% | 0.602 | 0.406 |
+| v1 | CELESTA-Lite (markers + spatial MRF) | 92.2% | 0.673 | 0.476 |
+| v2 | markers only (argmax score) | 96.2% | 0.600 | 0.406 |
+| v2 | CELESTA-Lite (markers + spatial MRF) | 93.6% | 0.669 | 0.475 |
+
+| Signature | non-anchor cells assigned by the MRF | agreement: CELESTA-Lite | agreement: markers only, same cells |
+|---|---|---|---|
+| v1 | 334,187 | 0.589 | 0.398 |
+| v2 | 333,914 | 0.587 | 0.395 |
+
+| Class (v1) | published cells | CELESTA-Lite cells | recall | precision |
+|---|---|---|---|---|
+| Tumor | 601,652 | 554,518 | 0.83 | 0.90 |
+| T | 78,977 | 79,788 | 0.33 | 0.32 |
+| B | 39,584 | 62,605 | 0.55 | 0.35 |
+| Macrophage | 50,837 | 127,942 | 0.57 | 0.23 |
+| Endothelial | 48,508 | 59,322 | 0.38 | 0.31 |
+| Stroma | 247,408 | 99,652 | 0.28 | 0.71 |
+
+- **The spatial step does what CELESTA claims.** On the cells markers alone cannot settle, it raises agreement from 0.398 to 0.589.
+- **Overall concordance is moderate.** The signature uses only 7 markers, and two of them separate cell types weakly here: CD3 is dim, and CD68 is non-specific. T cells and macrophages are where the methods disagree most. v2, which adds the two fibroblast markers (FSP1, Podoplanin) that v1 omitted, changed almost nothing, so the signature was not tuned further against the published labels.
+- **Downstream effect.** Spatial features computed from CELESTA-Lite labels correlate with the published-label features at ρ = 0.82–0.84 for tumor-centred summaries but only 0.18–0.44 for T-cell pairs (`results/part2/tables.md`). The METABRIC model built on them (pre-registered in Amendment 3) adds nothing (§P2.2). Better-informed cell labels did not uncover prognostic spatial signal.
+
+Reproduce: `uv run python scripts/run_celesta_metabric.py`, which writes `results/celesta/{v1,v2,v1_reference_ep}/`.
+
 ## 8. Reproduction
 
 ```bash
-uv sync                                   # Python 3.12, pinned dependencies (pyproject.toml + uv.lock)
-uv run python scripts/download_data.py    # ~31 MB download + 0.16 MB range-extracted; checksums verified
-uv run python scripts/run.py              # all results/ and figures/ (a few minutes on a laptop CPU)
-uv run python scripts/report_tables.py    # results/tables.md: the tables in this README
-uv run pytest                             # 12 tests
+uv sync                                              # Python 3.12, pinned dependencies (pyproject.toml + uv.lock)
+uv run python scripts/download_data.py               # Basel: ~31 MB download + 0.16 MB range-extracted; checksums verified
+uv run python scripts/run.py                         # part I: results/ and figures/ (a few minutes on a laptop CPU)
+uv run python scripts/report_tables.py               # results/tables.md
+uv run python scripts/download_data.py --metabric    # METABRIC: 383 MB range-extracted (850 MB on disk) + cBioPortal clinical
+uv run python scripts/run_celesta_metabric.py        # part III: results/celesta/ (~2 min per run, 3 runs)
+uv run python scripts/run_part2.py                   # part II: results/part2/ (~31 min; needs the CELESTA v1 labels)
+uv run python scripts/report_part2.py                # results/part2/tables.md
+uv run pytest                                        # 31 tests
 ```
+
+- **Order matters for part II.** Its CELESTA-label model (Amendment 3) reads `results/celesta/v1/cell_labels.csv.gz`, so run part III first. The labels are committed, so `run_part2.py` also works on its own.
+- **METABRIC provenance.** The Zenodo member is CRC-checked against the archive's central directory. The cBioPortal clinical data come from a live API, so the MD5 of the snapshot used here is recorded in `results/part2/data_manifest.json`. A later download that differs from it may shift part II numbers slightly.
 
 - **Listing only.** `scripts/download_data.py --list` lists the record and the 36.8 GB archive's members by reading only its central directory.
 - **Configuration and raw records.** Seeds, k, permutations and grids live in `CONFIG` in `scripts/run.py` and are saved to `results/summary.json` with package versions and runtime. Per-fold records (seed, fold, selected α, inner C, test C, non-zero coefficients, test patient IDs) are in `results/{os,dss}_per_fold.csv`. Out-of-fold risks are in `results/{os,dss}_oof_risk.csv`.
@@ -274,30 +528,44 @@ uv run pytest                             # 12 tests
 - **Patient-level splits.** Outer folds partition patients, and multi-image patients collapse to one row before CV.
 - **Neighbour enrichment.** An exact hand-worked null on a 4-node path graph, the closed-form permutation mean, and segregated vs. checkerboard layouts.
 - **Toy end-to-end.** Simulated images in which T-cell infiltration drives survival at fixed composition; the spatial model must beat the clinical and composition models by more than 0.1 C.
-- **README integrity.** Every result-table row here appears in `results/tables.md`.
+- **Residualisation.** In-fold residualisation removes a planted composition effect, keeps a planted arrangement effect, and is fit on training rows only.
+- **METABRIC harmonisation.** The pN banding from node counts, the 180-month censoring, the phenotype-to-class mapping (which reaches every Basel class and fails loudly on an unmapped phenotype), and the cell filters.
+- **CELESTA-Lite.** The mixture fit and its crossing point, both EP methods (the posterior is invariant to rescaling the channel), cell-type scores, lineage rounds, the artifact filter, and a toy core where the spatial step must rescue cells whose markers are ambiguous.
+- **README integrity.** Every result-table row here appears in `results/tables.md` or `results/part2/tables.md`.
 
 CI (`.github/workflows/tests.yml`) runs the tests on every push.
 
-Layout: `scripts/{download_data,run,report_tables}.py`, `src/spatialsurv/{data,features,models,cv,eval,robustness,plots}.py`, `tests/`, `results/`, `figures/`.
+Layout:
+- `scripts/`: `download_data`, `run` and `report_tables` (part I); `run_part2` and `report_part2` (part II); `run_celesta_metabric` (part III).
+- `src/spatialsurv/`: `data`, `features`, `models`, `cv`, `eval`, `robustness`, `plots`, `metabric`.
+- `src/celesta_lite/`: `preprocessing`, `mrf`, `graph`, `benchmark`.
+- Also `tests/`, `results/` (`part2/`, `celesta/`) and `figures/`.
 
 ## 9. Caveats and limitations
 
-- **Single cohort, no external validation.** Nested CV estimates internal performance only.
-- **Overall survival includes non-cancer deaths** (22 of 79). DSS censors them, so it estimates a cause-specific hazard, not a cumulative incidence.
-- **Small n relative to features.** 280 patients and 79 or 57 events against up to 45 features. Per-model 95% CIs are about ±0.05 wide.
-- **One small TMA core per patient (rarely two).** Spatial features describe a tiny sample of each tumor. Rare-class pairs are often undefined (Tumor–B is missing for 108/280 patients and imputed).
-- **The spatial panel is small and partly confounded** with composition and image size (§5.5). Richer descriptors, such as cellular neighbourhoods, distance-based statistics, or the paper's own community features, might behave differently.
-- **Harrell's C** depends on the censoring distribution and measures discrimination only; calibration was not assessed.
-- **The clinical ridge α sometimes hits the grid edge** (10³). Large ridge penalties mostly rescale the linear predictor, to which the rank-based C is insensitive. The grid was not re-tuned after seeing results.
-- **Cell labels are the published metaclusters,** clustered once on all Basel cells. This is outcome-blind, but it is a shared upstream step that a strictly prospective pipeline would not have.
+**Scope of the null result**
+- **It concerns incremental value over clinical variables, for this feature panel.** It does not say spatial structure is unrelated to outcome. Danenberg et al. report outcome associations for METABRIC TME structures. Those analyses ask a different question (association, not out-of-fold gain over a clinical model). The panel here is also small: pairwise enrichment, neighbour fractions and mixing on 6 coarse classes. Richer descriptors, such as cellular neighbourhoods, distance-based statistics or the papers' own community features, might behave differently.
+- **One small TMA core per patient (rarely two), in both cohorts.** Spatial features describe a tiny sample of each tumor. Rare-class pairs are often undefined (Tumor–B is missing for 108/280 Basel patients and imputed).
+
+**Statistics**
+- **Basel is small relative to the feature count.** 280 patients and 79 or 57 events against up to 45 features. Per-model 95% CIs are about ±0.05 wide. METABRIC is larger (§P2.1), which is why its CIs exclude gains above +0.005.
+- **Overall survival includes non-cancer deaths.** In Basel that is 22 of 79. DSS censors them, so it estimates a cause-specific hazard, not a cumulative incidence.
+- **Harrell's C depends on the censoring distribution.** Calibration and time-dependent AUC are reported in §P2.4. Decision-curve analysis was not done, because no layer cleared the discrimination bar.
+- **The clinical ridge α sometimes hits the grid edge** (10³). Large ridge penalties mostly rescale the linear predictor, to which the rank-based C is insensitive. They do affect calibration, which is the under-confidence seen in §P2.4. The grid was not re-tuned after seeing results.
+- **The ER-negative lead is one of many exploratory comparisons.** Part I and part II together ran several endpoints, feature variants and a subgroup, and no multiplicity correction is applied to the exploratory ones. Only H1 was confirmatory.
+
+**Cell labels**
+- **The cell labels are the published clusterings,** made once on all cells of each cohort. They are outcome-blind, but they are a shared upstream step that a strictly prospective pipeline would not have. Cross-cohort class mapping (Amendment 1) is a judgement call, such as placing CD57⁺ cells with T cells.
+- **The published labels are not ground truth.** CELESTA-Lite "agreement" is concordance between two automated methods.
+- **CELESTA-Lite departs from the reference in three ways.** It fits marker mixtures once per cohort rather than per sample. It uses a posterior EP rather than the reference sigmoid (Part III). It uses an arcsinh cofactor of 1 for IMC counts. The signature was written from marker biology, and only v1 and v2 were tried. It was not tuned against the published labels.
 
 ## 10. Next steps
 
-- **Pre-registered external test of the one lead.** DSS with size-robust immune–tumor enrichment, in a larger IMC cohort with cancer-specific survival, such as METABRIC IMC (Danenberg et al. 2022).
-- **Composition-conditioned spatial statistics.** Residualise spatial features on composition and image size, or use statistics conditioned on composition by construction. Add multi-scale radius graphs and cross-type K/L functions.
-- **Multimodal integration** with clinical, genomic or H&E-derived features, comparing late fusion with joint penalised models under the same nested-CV + permutation-null protocol.
+- **Test the ER-negative lead prospectively.** Run a pre-registered DSS analysis of z-score spatial features in an independent ER-negative or triple-negative cohort with cancer-specific follow-up, with the hypothesis and decision rule fixed in advance, as was done for H1.
+- **Richer spatial descriptors under the same protocol.** Cellular neighbourhoods, multi-scale radius graphs and cross-type K/L functions, residualised on composition and image size in-fold as in §P2.5.
 - **Competing-risks modelling** (cause-specific Cox for both causes, or Fine–Gray) instead of censoring non-cancer deaths.
-- **Calibration and decision-curve analysis** if any layer clears the discrimination bar.
+- **Calibration of the transferred model.** Transfer (§P2.3) was scored on discrimination only, and the within-cohort clinical models are under-confident (§P2.4). The next step is to measure calibration of the Basel-trained model on METABRIC, and to test whether recalibrating it (baseline hazard and slope) on a small METABRIC subset makes absolute risk transfer too.
+- **Validate CELESTA-Lite against an annotated reference.** For example, use manually gated cells, or CODEX data where the reference sigmoid EP is in its intended regime, before using its labels for biology.
 
 ## References
 

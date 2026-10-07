@@ -277,4 +277,11 @@
 | `logoe_T__B` | 301 | +0.44 |
 | `logoe_Stroma__T` | 539 | +0.26 |
 
+## CELESTA-Lite: reference vs posterior expression probabilities (v1 signature)
+
+| EP method | artifact-filtered | cells assigned | agreement (assigned) | κ (assigned) | CELESTA T cells | T recall | mean CD3 EP, published T | mean CD3 EP, published Tumor |
+|---|---|---|---|---|---|---|---|---|
+| reference (sigmoid of x − crossing point) | 24.3% | 62.8% | 0.876 | 0.628 | 575 | 0.00 | 0.16 | 0.09 |
+| posterior (this port) | 4.9% | 92.2% | 0.673 | 0.476 | 79,788 | 0.33 | 0.71 | 0.47 |
+
 runtime_seconds: 1852.2
