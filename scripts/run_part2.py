@@ -46,6 +46,9 @@ CONFIG = dict(
 ENDPOINTS = {"os": "event_os", "dss": "event_dss"}
 M_CLIN, M_COMP = "clinical", "clinical+composition"
 M_SPAT, M_OE, M_RES = "+spatial (z)", "+spatial (log O/E)", "+spatial (residualised)"
+M_CEL = "+spatial (log O/E, CELESTA labels)"  # Amendment 3, section E
+CELESTA_LABELS = ROOT / "results" / "celesta" / "v1" / "cell_labels.csv.gz"
+CEL_COLS = [f"cel_{c}" for c in SPATIAL_COLS_LOGOE]
 
 
 def slug(s: str) -> str:
@@ -74,6 +77,11 @@ def basel_table() -> tuple[pd.DataFrame, list[str], list[str]]:
 def metabric_table(cfg: dict) -> tuple[pd.DataFrame, list[str], list[str], dict]:
     clin = load_metabric_clinical(RAW_MB)
     cells = load_metabric_cells(RAW_MB)
+    if CELESTA_LABELS.exists():
+        lab = pd.read_csv(CELESTA_LABELS, usecols=["core", "metabric_id", "celesta_coarse"])
+        if len(lab) != len(cells) or not (lab["core"].to_numpy() == cells["core"].to_numpy()).all()                 or not (lab["metabric_id"].to_numpy() == cells["PID"].to_numpy()).all():
+            raise ValueError("CELESTA labels are not aligned with the METABRIC cells")
+        cells["celesta_coarse"] = lab["celesta_coarse"].to_numpy()
     n_cells = cells.groupby("PID").size()
     has_epi = cells.groupby("PID")["is_epithelial"].max() == 1
     keep_cells = n_cells.index[(n_cells >= MIN_CELLS) & has_epi]
@@ -88,6 +96,18 @@ def metabric_table(cfg: dict) -> tuple[pd.DataFrame, list[str], list[str], dict]
         img.to_csv(cache)
     cores = cells[["core", "PID"]].drop_duplicates()
     spatial = aggregate_to_patient(img, cores)
+    if "celesta_coarse" in cells:  # section E: same features from CELESTA labels, Unknown cells dropped
+        cache_e = PROC / f"metabric_celesta_spatial_img_k{cfg['knn_k']}_p{cfg['n_perm']}_s{cfg['spatial_seed']}.csv"
+        if cache_e.exists():
+            img_e = pd.read_csv(cache_e, index_col="core")
+        else:
+            known = cells[cells["celesta_coarse"] != "Unknown"]
+            img_e = spatial_features_by_image(known.assign(coarse=known["celesta_coarse"]),
+                                              cfg["knn_k"], cfg["n_perm"], cfg["spatial_seed"])
+            img_e.to_csv(cache_e)
+        sp_e = aggregate_to_patient(img_e, cores)[SPATIAL_COLS_LOGOE]
+        sp_e.columns = CEL_COLS
+        spatial = spatial.join(sp_e, how="left")
 
     native = pd.crosstab(cells["PID"], cells["cellPhenotype"])
     native.columns = [f"pheno_{slug(c)}" for c in native.columns]
@@ -230,12 +250,13 @@ def main() -> None:
         FeatureSet(M_OE, CLINICAL_COLS, native_cols, SPATIAL_COLS_LOGOE),
         FeatureSet(M_RES, CLINICAL_COLS, native_cols, SPATIAL_COLS_LOGOE,
                    residualize_spatial=True),
+        FeatureSet(M_CEL, CLINICAL_COLS, native_cols, CEL_COLS),
     ]
     a1 = {}
     for ep, col in ENDPOINTS.items():
         y = survival_array(Xm["time"].to_numpy(), Xm[col].to_numpy())
         t = time.time()
-        a1[ep] = compare(f"metabric_{ep}", Xm, y, fsets_m, M_COMP, [M_SPAT, M_OE, M_RES], cfg)
+        a1[ep] = compare(f"metabric_{ep}", Xm, y, fsets_m, M_COMP, [M_SPAT, M_OE, M_RES, M_CEL], cfg)
         a1[ep]["calibration"] = calibration(f"metabric_{ep}", y, a1[ep]["oof"], cfg)
         print(f"\n[METABRIC {ep}] {time.time() - t:.0f}s\n", a1[ep]["models"].round(4).to_string(index=False))
         print(a1[ep]["diffs"].round(4).to_string(index=False))
@@ -273,19 +294,29 @@ def main() -> None:
 
     # ---- D: ER-negative subgroup (exploratory, gated on DSS events)
     er = Xm[Xm["ER"] == 0]
+    # Amendment 3(a): drop ER and binary clinical columns whose minority level has < 10 patients
+    clin_er = []
+    for col in CLINICAL_COLS:
+        v = er[col].dropna()
+        if col == "ER" or (set(v.unique()) <= {0.0, 1.0} and min((v == 0).sum(), (v == 1).sum()) < 10):
+            continue
+        clin_er.append(col)
     n_ev = int(er["event_dss"].sum())
-    summary["er_negative"] = dict(n=len(er), dss_events=n_ev, run=n_ev >= cfg["er_neg_min_dss_events"])
+    summary["er_negative"] = dict(n=len(er), dss_events=n_ev, run=n_ev >= cfg["er_neg_min_dss_events"],
+                                  clinical_columns_used=clin_er,
+                                  clinical_columns_dropped=[c for c in CLINICAL_COLS if c not in clin_er])
     if summary["er_negative"]["run"]:
         for ep, col in ENDPOINTS.items():
             y = survival_array(er["time"].to_numpy(), er[col].to_numpy())
-            rd = compare(f"metabric_erneg_{ep}", er, y, fsets_m[:4], M_COMP, [M_SPAT, M_OE], cfg)
+            fs_er = [FeatureSet(f.name, clin_er, f.composition, f.spatial) for f in fsets_m[:4]]
+            rd = compare(f"metabric_erneg_{ep}", er, y, fs_er, M_COMP, [M_SPAT, M_OE], cfg)
             summary["er_negative"][ep] = dict(cindex=rd["models"].to_dict("records"),
                                               paired_differences=rd["diffs"].to_dict("records"),
                                               robustness=rd["robustness"])
 
     # ---- figures
     eps = {"OS": "os", "DSS": "dss"}
-    spatial = {"z-score": M_SPAT, "log O/E": M_OE, "residualised": M_RES}
+    spatial = {"z-score": M_SPAT, "log O/E": M_OE, "residualised": M_RES, "CELESTA labels": M_CEL}
     cidx = {k: pd.read_csv(OUT / f"metabric_{v}_cindex.csv") for k, v in eps.items()}
     reps = {k: pd.read_csv(OUT / f"metabric_{v}_cv_repeat_deltas.csv") for k, v in eps.items()}
     nulls = {k: {m: pd.read_csv(OUT / f"metabric_{v}_perm_null_{slug(m)}.csv").filter(like="null_delta_seed").to_numpy().ravel()
