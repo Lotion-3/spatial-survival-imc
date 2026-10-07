@@ -1,0 +1,796 @@
+{
+  "config": {
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "outer_folds": 5,
+    "inner_folds": 5,
+    "knn_k": 8,
+    "n_perm": 200,
+    "spatial_seed": 12345,
+    "clr_pseudocount": 0.5,
+    "l1_ratio": 0.5,
+    "n_alphas": 20,
+    "alpha_min_ratio": 0.01,
+    "coxnet_max_iter": 100000,
+    "ridge_log10_min": -2.0,
+    "ridge_log10_max": 3.0,
+    "n_boot": 1000,
+    "boot_seed": 2024,
+    "robustness_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "n_perm_null": 20,
+    "auc_times": [
+      60.0,
+      120.0
+    ],
+    "er_neg_min_dss_events": 40
+  },
+  "metabric_cohort": {
+    "cohort": "METABRIC IMC (Danenberg et al. 2022), invasive tumour images, artefact cells removed",
+    "patients_with_images_after_cell_filters": 577,
+    "patients_dropped_cells_lt_min_or_no_epithelium": 116,
+    "patients_with_clinical": 492,
+    "n_patients": 492,
+    "n_images": 543,
+    "n_cells": 904202,
+    "events_os_180m": 231,
+    "events_dss_180m": 156,
+    "median_time_months": 102.85,
+    "er_negative_patients": 106,
+    "er_negative_dss_events": 48,
+    "missing_clinical": {
+      "tumor_size": 1,
+      "grade": 7,
+      "pN": 14
+    },
+    "n_native_phenotypes": 32,
+    "median_cells_per_patient": 1512.0
+  },
+  "metabric_os": {
+    "cindex": [
+      {
+        "model": "clinical",
+        "cindex": 0.703709598974223,
+        "ci_low": 0.6697822171923627,
+        "ci_high": 0.7350198735062426,
+        "cindex_per_seed": "0.7107;0.6951;0.7053"
+      },
+      {
+        "model": "clinical+composition",
+        "cindex": 0.69664853870982,
+        "ci_low": 0.6621335246938237,
+        "ci_high": 0.7295562622197862,
+        "cindex_per_seed": "0.7004;0.6880;0.7015"
+      },
+      {
+        "model": "+spatial (z)",
+        "cindex": 0.6966175885395941,
+        "ci_low": 0.6617686327369466,
+        "ci_high": 0.7293951685805672,
+        "cindex_per_seed": "0.7013;0.6879;0.7007"
+      },
+      {
+        "model": "+spatial (log O/E)",
+        "cindex": 0.6981120396162179,
+        "ci_low": 0.6629576954448922,
+        "ci_high": 0.7304757400870009,
+        "cindex_per_seed": "0.7025;0.6921;0.6997"
+      },
+      {
+        "model": "+spatial (residualised)",
+        "cindex": 0.6986558783216165,
+        "ci_low": 0.6633552969084157,
+        "ci_high": 0.7314346026575663,
+        "cindex_per_seed": "0.7025;0.6905;0.7031"
+      },
+      {
+        "model": "+spatial (log O/E, CELESTA labels)",
+        "cindex": 0.6966573816155989,
+        "ci_low": 0.661654589733978,
+        "ci_high": 0.729376804267472,
+        "cindex_per_seed": "0.6980;0.6901;0.7018"
+      },
+      {
+        "model": "random baseline",
+        "cindex": 0.4974355573241367,
+        "ci_low": 0.47460324508473434,
+        "ci_high": 0.5196518684359013,
+        "cindex_per_seed": "0.4955;0.4871;0.5097"
+      }
+    ],
+    "paired_differences": [
+      {
+        "comparison": "clinical+composition minus clinical",
+        "delta": -0.007061060264403007,
+        "ci_low": -0.019800257890484153,
+        "ci_high": 0.006606780367246711,
+        "frac_boot_gt0": 0.159
+      },
+      {
+        "comparison": "+spatial (z) minus clinical+composition",
+        "delta": -3.0950170225918505e-05,
+        "ci_low": -0.002854393654120124,
+        "ci_high": 0.0032170937499632563,
+        "frac_boot_gt0": 0.493
+      },
+      {
+        "comparison": "+spatial (log O/E) minus clinical+composition",
+        "delta": 0.0014635009063979076,
+        "ci_low": -0.0023978478829873974,
+        "ci_high": 0.005209908863166587,
+        "frac_boot_gt0": 0.785
+      },
+      {
+        "comparison": "+spatial (residualised) minus clinical+composition",
+        "delta": 0.0020073396117964437,
+        "ci_low": -0.0011772751721522451,
+        "ci_high": 0.005302992731229822,
+        "frac_boot_gt0": 0.902
+      },
+      {
+        "comparison": "+spatial (log O/E, CELESTA labels) minus clinical+composition",
+        "delta": 8.842905778849719e-06,
+        "ci_low": -0.0030744585042659115,
+        "ci_high": 0.0032722597554455555,
+        "frac_boot_gt0": 0.488
+      }
+    ],
+    "robustness": {
+      "+spatial (z)": {
+        "cv_repeats": 10,
+        "delta_mean": 0.0005332272184640052,
+        "delta_sd": 0.0027259883234459835,
+        "delta_min": -0.004058893752487025,
+        "delta_max": 0.005942432683379684,
+        "frac_repeats_gt0": 0.4,
+        "observed_delta_3seeds": -3.0950170225918505e-05,
+        "null_mean": 0.0007748596188707899,
+        "null_sd": 0.001480922987633876,
+        "null_max": 0.003612327010655725,
+        "perm_p": 0.8571428571428571
+      },
+      "+spatial (log O/E)": {
+        "cv_repeats": 10,
+        "delta_mean": 0.0005690409868682966,
+        "delta_sd": 0.0029769576964338647,
+        "delta_min": -0.004377238360525282,
+        "delta_max": 0.0044966175885395865,
+        "frac_repeats_gt0": 0.5,
+        "observed_delta_3seeds": 0.0014635009063979076,
+        "null_mean": 0.0009063978423310305,
+        "null_sd": 0.0013732774790242673,
+        "null_max": 0.0034000972719635905,
+        "perm_p": 0.2857142857142857
+      },
+      "+spatial (residualised)": {
+        "cv_repeats": 10,
+        "delta_mean": 0.0008117787504974272,
+        "delta_sd": 0.0034956208992689246,
+        "delta_min": -0.006817880355484807,
+        "delta_max": 0.004788433479241294,
+        "frac_repeats_gt0": 0.6,
+        "observed_delta_3seeds": 0.0020073396117964437,
+        "null_mean": 0.0006557014635009332,
+        "null_sd": 0.0012188024758237354,
+        "null_max": 0.0022505195207145334,
+        "perm_p": 0.19047619047619047
+      },
+      "+spatial (log O/E, CELESTA labels)": {
+        "cv_repeats": 10,
+        "delta_mean": 0.0003024273776363051,
+        "delta_sd": 0.002254722491229662,
+        "delta_min": -0.0024141132776229757,
+        "delta_max": 0.003687491709775892,
+        "frac_repeats_gt0": 0.5,
+        "observed_delta_3seeds": 8.842905778849719e-06,
+        "null_mean": 0.0010178184551443868,
+        "null_sd": 0.0013256394559401517,
+        "null_max": 0.004187115886280253,
+        "perm_p": 0.8095238095238095
+      }
+    }
+  },
+  "metabric_dss": {
+    "cindex": [
+      {
+        "model": "clinical",
+        "cindex": 0.7082846852857415,
+        "ci_low": 0.6689969456851879,
+        "ci_high": 0.7461024881382745,
+        "cindex_per_seed": "0.7000;0.7157;0.7092"
+      },
+      {
+        "model": "clinical+composition",
+        "cindex": 0.71252247076484,
+        "ci_low": 0.6717951305374708,
+        "ci_high": 0.7499150770698466,
+        "cindex_per_seed": "0.7017;0.7178;0.7180"
+      },
+      {
+        "model": "+spatial (z)",
+        "cindex": 0.7096993396220587,
+        "ci_low": 0.6686321722519061,
+        "ci_high": 0.7468785041369459,
+        "cindex_per_seed": "0.7008;0.7152;0.7131"
+      },
+      {
+        "model": "+spatial (log O/E)",
+        "cindex": 0.7087912427336805,
+        "ci_low": 0.6668873999902507,
+        "ci_high": 0.7470185159227151,
+        "cindex_per_seed": "0.7017;0.7090;0.7157"
+      },
+      {
+        "model": "+spatial (residualised)",
+        "cindex": 0.7082846852857417,
+        "ci_low": 0.6671127675526718,
+        "ci_high": 0.7461799813760134,
+        "cindex_per_seed": "0.7019;0.7073;0.7157"
+      },
+      {
+        "model": "+spatial (log O/E, CELESTA labels)",
+        "cindex": 0.7068576758897187,
+        "ci_low": 0.6649656561072564,
+        "ci_high": 0.7455963614844541,
+        "cindex_per_seed": "0.7010;0.7111;0.7085"
+      },
+      {
+        "model": "random baseline",
+        "cindex": 0.49520932559906594,
+        "ci_low": 0.46906411342211085,
+        "ci_high": 0.521676654175534,
+        "cindex_per_seed": "0.4909;0.4975;0.4972"
+      }
+    ],
+    "paired_differences": [
+      {
+        "comparison": "clinical+composition minus clinical",
+        "delta": 0.004237785479098477,
+        "ci_low": -0.010232788841727944,
+        "ci_high": 0.019859839380105968,
+        "frac_boot_gt0": 0.736
+      },
+      {
+        "comparison": "+spatial (z) minus clinical+composition",
+        "delta": -0.002823131142781321,
+        "ci_low": -0.008433983356267688,
+        "ci_high": 0.0019612382078730726,
+        "frac_boot_gt0": 0.138
+      },
+      {
+        "comparison": "+spatial (log O/E) minus clinical+composition",
+        "delta": -0.0037312280311594392,
+        "ci_low": -0.009181882133729936,
+        "ci_high": 0.0011480115825014258,
+        "frac_boot_gt0": 0.061
+      },
+      {
+        "comparison": "+spatial (residualised) minus clinical+composition",
+        "delta": -0.004237785479098255,
+        "ci_low": -0.01116934680508938,
+        "ci_high": 0.0020207300664481153,
+        "frac_boot_gt0": 0.085
+      },
+      {
+        "comparison": "+spatial (log O/E, CELESTA labels) minus clinical+composition",
+        "delta": -0.005664794875121282,
+        "ci_low": -0.010940616871408997,
+        "ci_high": -0.0009841939696136174,
+        "frac_boot_gt0": 0.011
+      }
+    ],
+    "robustness": {
+      "+spatial (z)": {
+        "cv_repeats": 10,
+        "delta_mean": -0.0016642265423747692,
+        "delta_sd": 0.00516708036104626,
+        "delta_min": -0.008265534943197594,
+        "delta_max": 0.010545043458922487,
+        "frac_repeats_gt0": 0.2,
+        "observed_delta_3seeds": -0.002823131142781321,
+        "null_mean": -0.002104684420887485,
+        "null_sd": 0.0024741767925733934,
+        "null_max": 0.0031381851652797868,
+        "perm_p": 0.7619047619047619
+      },
+      "+spatial (log O/E)": {
+        "cv_repeats": 10,
+        "delta_mean": -0.0005022331770418442,
+        "delta_sd": 0.007278370024550908,
+        "delta_min": -0.009229229600252076,
+        "delta_max": 0.015511777460664566,
+        "frac_repeats_gt0": 0.3,
+        "observed_delta_3seeds": -0.0037312280311594392,
+        "null_mean": -0.002114259592159497,
+        "null_sd": 0.0027556636932508723,
+        "null_max": 0.0030516997473389873,
+        "perm_p": 0.8095238095238095
+      },
+      "+spatial (residualised)": {
+        "cv_repeats": 10,
+        "delta_mean": 5.189125076447976e-05,
+        "delta_sd": 0.005529084549090893,
+        "delta_min": -0.010563576048481238,
+        "delta_max": 0.00876591486128353,
+        "frac_repeats_gt0": 0.5,
+        "observed_delta_3seeds": -0.004237785479098255,
+        "null_mean": -0.0023184269537982745,
+        "null_sd": 0.002428743278011567,
+        "null_max": 0.0005374450972034003,
+        "perm_p": 0.8571428571428571
+      },
+      "+spatial (log O/E, CELESTA labels)": {
+        "cv_repeats": 10,
+        "delta_mean": -0.0009173631831575935,
+        "delta_sd": 0.005571798043066744,
+        "delta_min": -0.009525751033191865,
+        "delta_max": 0.008321132711873847,
+        "frac_repeats_gt0": 0.5,
+        "observed_delta_3seeds": -0.005664794875121282,
+        "null_mean": -0.0023463802763827053,
+        "null_sd": 0.002213637483912663,
+        "null_max": 0.0013961217467582943,
+        "perm_p": 0.8571428571428571
+      }
+    }
+  },
+  "H1": {
+    "delta": -0.0037312280311594392,
+    "ci_low": -0.009181882133729936,
+    "ci_high": 0.0011480115825014258,
+    "perm_p": 0.8095238095238095,
+    "cv_repeat_mean": -0.0005022331770418442,
+    "criterion_a_ci_above_0": false,
+    "criterion_b_perm_p_le_005": false,
+    "criterion_c_repeat_mean_gt0": false,
+    "verdict": "refuted"
+  },
+  "transfer": {
+    "os": {
+      "models": [
+        {
+          "model": "clinical",
+          "cindex": 0.707958615200955,
+          "ci_low": 0.674075551276914,
+          "ci_high": 0.738881585899761,
+          "alpha": 1000.0
+        },
+        {
+          "model": "clinical+composition",
+          "cindex": 0.6833399655126675,
+          "ci_low": 0.6494401106501142,
+          "ci_high": 0.7171577088093102,
+          "alpha": 0.06088297135183301
+        },
+        {
+          "model": "+spatial (z)",
+          "cindex": 0.6844674359994695,
+          "ci_low": 0.6507780719104903,
+          "ci_high": 0.7173012493452486,
+          "alpha": 0.08751203504151042
+        },
+        {
+          "model": "+spatial (log O/E)",
+          "cindex": 0.6837644249900517,
+          "ci_low": 0.6502228799449685,
+          "ci_high": 0.7168652650945383,
+          "alpha": 0.07893603617536525
+        }
+      ],
+      "diffs": [
+        {
+          "comparison": "clinical+composition minus clinical",
+          "delta": -0.02461864968828753,
+          "ci_low": -0.044433461885724494,
+          "ci_high": -0.0058750015505422675,
+          "frac_boot_gt0": 0.002
+        },
+        {
+          "comparison": "+spatial (z) minus clinical+composition",
+          "delta": 0.0011274704868019514,
+          "ci_low": -0.0024077826947145886,
+          "ci_high": 0.004549650281545217,
+          "frac_boot_gt0": 0.727
+        },
+        {
+          "comparison": "+spatial (log O/E) minus clinical+composition",
+          "delta": 0.0004244594773842314,
+          "ci_low": -0.006254341996393931,
+          "ci_high": 0.007082418290803528,
+          "frac_boot_gt0": 0.554
+        }
+      ]
+    },
+    "dss": {
+      "models": [
+        {
+          "model": "clinical",
+          "cindex": 0.7016253081043015,
+          "ci_low": 0.6611662147601005,
+          "ci_high": 0.7378728464575943,
+          "alpha": 26.366508987303583
+        },
+        {
+          "model": "clinical+composition",
+          "cindex": 0.6888563538983302,
+          "ci_low": 0.6460447477262024,
+          "ci_high": 0.7277408456322074,
+          "alpha": 0.032962098515151535
+        },
+        {
+          "model": "+spatial (z)",
+          "cindex": 0.6860764654645194,
+          "ci_low": 0.6436088806704284,
+          "ci_high": 0.7244547420123201,
+          "alpha": 0.08426415020066504
+        },
+        {
+          "model": "+spatial (log O/E)",
+          "cindex": 0.6878741266517171,
+          "ci_low": 0.6455559171205979,
+          "ci_high": 0.7270275740972179,
+          "alpha": 0.054586354754774635
+        }
+      ],
+      "diffs": [
+        {
+          "comparison": "clinical+composition minus clinical",
+          "delta": -0.012768954205971239,
+          "ci_low": -0.02284888846065177,
+          "ci_high": -0.002800018689656714,
+          "frac_boot_gt0": 0.005
+        },
+        {
+          "comparison": "+spatial (z) minus clinical+composition",
+          "delta": -0.0027798884338108287,
+          "ci_low": -0.007872583154807055,
+          "ci_high": 0.001879483754798458,
+          "frac_boot_gt0": 0.136
+        },
+        {
+          "comparison": "+spatial (log O/E) minus clinical+composition",
+          "delta": -0.000982227246613121,
+          "ci_low": -0.013958231847242852,
+          "ci_high": 0.012161758272122063,
+          "frac_boot_gt0": 0.44
+        }
+      ]
+    }
+  },
+  "basel_os_residualised": {
+    "cindex": [
+      {
+        "model": "clinical",
+        "cindex": 0.7408210180623973,
+        "ci_low": 0.6869341090284934,
+        "ci_high": 0.7919103902000796,
+        "cindex_per_seed": "0.7350;0.7548;0.7326"
+      },
+      {
+        "model": "clinical+composition",
+        "cindex": 0.7476737821565408,
+        "ci_low": 0.6898663995587603,
+        "ci_high": 0.8014331304852488,
+        "cindex_per_seed": "0.7400;0.7601;0.7429"
+      },
+      {
+        "model": "+spatial (residualised)",
+        "cindex": 0.745615763546798,
+        "ci_low": 0.6886724856770013,
+        "ci_high": 0.7981631853488583,
+        "cindex_per_seed": "0.7402;0.7477;0.7490"
+      },
+      {
+        "model": "random baseline",
+        "cindex": 0.5030979748221127,
+        "ci_low": 0.46494602637418503,
+        "ci_high": 0.5404126782519095,
+        "cindex_per_seed": "0.5636;0.4843;0.4614"
+      }
+    ],
+    "paired_differences": [
+      {
+        "comparison": "clinical+composition minus clinical",
+        "delta": 0.006852764094143482,
+        "ci_low": -0.016989930058435736,
+        "ci_high": 0.029434020929751583,
+        "frac_boot_gt0": 0.674
+      },
+      {
+        "comparison": "+spatial (residualised) minus clinical+composition",
+        "delta": -0.002058018609742751,
+        "ci_low": -0.011044471846603069,
+        "ci_high": 0.006859377544929634,
+        "frac_boot_gt0": 0.313
+      }
+    ],
+    "robustness": {
+      "+spatial (residualised)": {
+        "cv_repeats": 10,
+        "delta_mean": 3.940886699508317e-05,
+        "delta_sd": 0.010310485331409899,
+        "delta_min": -0.016880131362889905,
+        "delta_max": 0.0139244663382595,
+        "frac_repeats_gt0": 0.6,
+        "observed_delta_3seeds": -0.002058018609742751,
+        "null_mean": 0.0019978106185003027,
+        "null_sd": 0.0018558751127773858,
+        "null_max": 0.00468527640941437,
+        "perm_p": 1.0
+      }
+    }
+  },
+  "basel_dss_residualised": {
+    "cindex": [
+      {
+        "model": "clinical",
+        "cindex": 0.7211659165365422,
+        "ci_low": 0.6603833788385324,
+        "ci_high": 0.7774106609653079,
+        "cindex_per_seed": "0.7342;0.7365;0.6928"
+      },
+      {
+        "model": "clinical+composition",
+        "cindex": 0.7233703805762225,
+        "ci_low": 0.6602105919322306,
+        "ci_high": 0.7795209754965644,
+        "cindex_per_seed": "0.7535;0.7072;0.7095"
+      },
+      {
+        "model": "+spatial (residualised)",
+        "cindex": 0.745598726309666,
+        "ci_low": 0.6868653078574134,
+        "ci_high": 0.7953658977650236,
+        "cindex_per_seed": "0.7617;0.7552;0.7198"
+      },
+      {
+        "model": "random baseline",
+        "cindex": 0.504516089525734,
+        "ci_low": 0.4592443653341844,
+        "ci_high": 0.5528122968049985,
+        "cindex_per_seed": "0.5613;0.4635;0.4887"
+      }
+    ],
+    "paired_differences": [
+      {
+        "comparison": "clinical+composition minus clinical",
+        "delta": 0.0022044640396803317,
+        "ci_low": -0.03792869082479147,
+        "ci_high": 0.03974194031659746,
+        "frac_boot_gt0": 0.537
+      },
+      {
+        "comparison": "+spatial (residualised) minus clinical+composition",
+        "delta": 0.022228345733443455,
+        "ci_low": -0.00011703298370456218,
+        "ci_high": 0.04800767600437987,
+        "frac_boot_gt0": 0.973
+      }
+    ],
+    "robustness": {
+      "+spatial (residualised)": {
+        "cv_repeats": 10,
+        "delta_mean": 0.0009368972168641521,
+        "delta_sd": 0.022137649133527566,
+        "delta_min": -0.036924772664646,
+        "delta_max": 0.04803894553136767,
+        "frac_repeats_gt0": 0.5,
+        "observed_delta_3seeds": 0.022228345733443455,
+        "null_mean": 0.0033434371268485216,
+        "null_sd": 0.008366204487124884,
+        "null_max": 0.01928906034720305,
+        "perm_p": 0.047619047619047616
+      }
+    }
+  },
+  "er_negative": {
+    "n": 106,
+    "dss_events": 48,
+    "run": true,
+    "clinical_columns_used": [
+      "age",
+      "tumor_size",
+      "grade",
+      "pN",
+      "HER2"
+    ],
+    "clinical_columns_dropped": [
+      "ER",
+      "PR"
+    ],
+    "os": {
+      "cindex": [
+        {
+          "model": "clinical",
+          "cindex": 0.621271676300578,
+          "ci_low": 0.5611156029556853,
+          "ci_high": 0.6812943904477147,
+          "cindex_per_seed": "0.6173;0.6294;0.6171"
+        },
+        {
+          "model": "clinical+composition",
+          "cindex": 0.6367630057803467,
+          "ci_low": 0.5749248627260981,
+          "ci_high": 0.6965911033152316,
+          "cindex_per_seed": "0.6555;0.6317;0.6231"
+        },
+        {
+          "model": "+spatial (z)",
+          "cindex": 0.6199614643545279,
+          "ci_low": 0.56136205947864,
+          "ci_high": 0.6743840957865969,
+          "cindex_per_seed": "0.6472;0.5806;0.6321"
+        },
+        {
+          "model": "+spatial (log O/E)",
+          "cindex": 0.6221965317919076,
+          "ci_low": 0.5588149801385096,
+          "ci_high": 0.682845302683221,
+          "cindex_per_seed": "0.6229;0.6333;0.6104"
+        },
+        {
+          "model": "random baseline",
+          "cindex": 0.48308285163776493,
+          "ci_low": 0.44133907382040016,
+          "ci_high": 0.5271135175090564,
+          "cindex_per_seed": "0.4844;0.4571;0.5077"
+        }
+      ],
+      "paired_differences": [
+        {
+          "comparison": "clinical+composition minus clinical",
+          "delta": 0.015491329479768723,
+          "ci_low": -0.029355851352135014,
+          "ci_high": 0.06142776089214659,
+          "frac_boot_gt0": 0.738
+        },
+        {
+          "comparison": "+spatial (z) minus clinical+composition",
+          "delta": -0.0168015414258188,
+          "ci_low": -0.05519936677606145,
+          "ci_high": 0.02458934664503726,
+          "frac_boot_gt0": 0.235
+        },
+        {
+          "comparison": "+spatial (log O/E) minus clinical+composition",
+          "delta": -0.014566473988439133,
+          "ci_low": -0.043248299442017586,
+          "ci_high": 0.011858662314404944,
+          "frac_boot_gt0": 0.166
+        }
+      ],
+      "robustness": {
+        "+spatial (z)": {
+          "cv_repeats": 10,
+          "delta_mean": -0.011098265895953752,
+          "delta_sd": 0.029693759080593362,
+          "delta_min": -0.06658959537572251,
+          "delta_max": 0.03583815028901727,
+          "frac_repeats_gt0": 0.4,
+          "observed_delta_3seeds": -0.0168015414258188,
+          "null_mean": -0.007564547206165688,
+          "null_sd": 0.011831074723333718,
+          "null_max": 0.009556840077071324,
+          "perm_p": 0.8095238095238095
+        },
+        "+spatial (log O/E)": {
+          "cv_repeats": 10,
+          "delta_mean": -0.010843930635838139,
+          "delta_sd": 0.023945852890260567,
+          "delta_min": -0.05317919075144506,
+          "delta_max": 0.01965317919075149,
+          "frac_repeats_gt0": 0.4,
+          "observed_delta_3seeds": -0.014566473988439133,
+          "null_mean": -0.009903660886319835,
+          "null_sd": 0.009830696819768713,
+          "null_max": 0.008169556840077067,
+          "perm_p": 0.7142857142857143
+        }
+      }
+    },
+    "dss": {
+      "cindex": [
+        {
+          "model": "clinical",
+          "cindex": 0.630648899188876,
+          "ci_low": 0.5500766958025944,
+          "ci_high": 0.7070112988910371,
+          "cindex_per_seed": "0.6243;0.6446;0.6231"
+        },
+        {
+          "model": "clinical+composition",
+          "cindex": 0.6259173426033218,
+          "ci_low": 0.5515943491739099,
+          "ci_high": 0.6945391989238843,
+          "cindex_per_seed": "0.6402;0.6072;0.6304"
+        },
+        {
+          "model": "+spatial (z)",
+          "cindex": 0.6623213595983004,
+          "ci_low": 0.5865799433661631,
+          "ci_high": 0.731321300814025,
+          "cindex_per_seed": "0.6472;0.6590;0.6808"
+        },
+        {
+          "model": "+spatial (log O/E)",
+          "cindex": 0.6375048281189649,
+          "ci_low": 0.5700473508176841,
+          "ci_high": 0.6998209114772889,
+          "cindex_per_seed": "0.6014;0.6382;0.6729"
+        },
+        {
+          "model": "random baseline",
+          "cindex": 0.49362688296639634,
+          "ci_low": 0.45190269648666964,
+          "ci_high": 0.5370873868763788,
+          "cindex_per_seed": "0.4916;0.4710;0.5183"
+        }
+      ],
+      "paired_differences": [
+        {
+          "comparison": "clinical+composition minus clinical",
+          "delta": -0.004731556585554242,
+          "ci_low": -0.07322525102701502,
+          "ci_high": 0.06474956316824569,
+          "frac_boot_gt0": 0.445
+        },
+        {
+          "comparison": "+spatial (z) minus clinical+composition",
+          "delta": 0.03640401699497864,
+          "ci_low": -0.013216483796378938,
+          "ci_high": 0.08568624634309835,
+          "frac_boot_gt0": 0.93
+        },
+        {
+          "comparison": "+spatial (log O/E) minus clinical+composition",
+          "delta": 0.011587485515643148,
+          "ci_low": -0.033995004240871686,
+          "ci_high": 0.05399534138342277,
+          "frac_boot_gt0": 0.672
+        }
+      ],
+      "robustness": {
+        "+spatial (z)": {
+          "cv_repeats": 10,
+          "delta_mean": 0.0265353418308227,
+          "delta_sd": 0.026081925864336275,
+          "delta_min": -0.022016222479721903,
+          "delta_max": 0.06083429895712633,
+          "frac_repeats_gt0": 0.9,
+          "observed_delta_3seeds": 0.03640401699497864,
+          "null_mean": -0.015169949787562744,
+          "null_sd": 0.02641506015083448,
+          "null_max": 0.06392429509463116,
+          "perm_p": 0.09523809523809523
+        },
+        "+spatial (log O/E)": {
+          "cv_repeats": 10,
+          "delta_mean": 0.02639049826187717,
+          "delta_sd": 0.02846132516666235,
+          "delta_min": -0.03881807647740443,
+          "delta_max": 0.05880648899188878,
+          "frac_repeats_gt0": 0.9,
+          "observed_delta_3seeds": 0.011587485515643148,
+          "null_mean": -0.013277327153341045,
+          "null_sd": 0.024959922589089308,
+          "null_max": 0.03360370799536505,
+          "perm_p": 0.19047619047619047
+        }
+      }
+    }
+  },
+  "runtime_seconds": 1852.2
+}

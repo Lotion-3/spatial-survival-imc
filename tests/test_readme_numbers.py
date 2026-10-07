@@ -13,6 +13,9 @@ def test_readme_tables_come_from_results():
     if not tables.exists():
         pytest.skip("run scripts/run.py and scripts/report_tables.py first")
     generated = set(tables.read_text(encoding="utf-8").splitlines())
+    part2 = ROOT / "results" / "part2" / "tables.md"  # part II + CELESTA tables (scripts/report_part2.py)
+    if part2.exists():
+        generated |= set(part2.read_text(encoding="utf-8").splitlines())
     readme = (ROOT / "README.md").read_text(encoding="utf-8").splitlines()
     rows = [l for l in readme if l.startswith("| ") and not set(l) <= set("|- ")]
     # The data-files table in section 2 describes downloads, not results.

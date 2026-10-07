@@ -13,6 +13,32 @@ import pandas as pd
 from report_tables import cindex_table, diff_table, robustness_table, signed
 
 OUT = Path(__file__).resolve().parents[1] / "results" / "part2"
+CEL = Path(__file__).resolve().parents[1] / "results" / "celesta"
+
+
+def celesta_tables() -> list[str]:
+    rows = ["| Signature | Labelling | cells assigned | agreement (assigned cells) | Cohen's κ (assigned cells) |",
+            "|---|---|---|---|---|"]
+    idx = ["| Signature | non-anchor cells assigned by the MRF | agreement: CELESTA-Lite | agreement: markers only, same cells |",
+           "|---|---|---|---|"]
+    for v in ["v1", "v2"]:
+        s = json.loads((CEL / v / "summary.json").read_text())
+        for key, lab in [("marker_only_vs_published", "markers only (argmax score)"), ("celesta_vs_published", "CELESTA-Lite (markers + spatial MRF)")]:
+            a = s[key]
+            rows.append(f"| {v} | {lab} | {a['coverage']:.1%} | {a['agreement_assigned']:.3f} | {a['kappa_assigned']:.3f} |")
+        i = s["index_cells"]
+        idx.append(f"| {v} | {i['n']:,} | {i['celesta_agreement']:.3f} | {i['marker_only_agreement_same_cells']:.3f} |")
+    pc = pd.read_csv(CEL / "v1" / "per_class_celesta.csv")
+    cls = ["| Class (v1) | published cells | CELESTA-Lite cells | recall | precision |", "|---|---|---|---|---|"]
+    for _, r in pc.iterrows():
+        cls.append(f"| {r.cls} | {r.published_n:,} | {r.celesta_n:,} | {r.recall:.2f} | {r.precision:.2f} |")
+    fc = pd.read_csv(CEL / "v1" / "spatial_feature_concordance.csv")
+    feat = ["| Spatial feature (v1 labels) | images | Spearman ρ, CELESTA-Lite vs. published labels |", "|---|---|---|"]
+    for _, r in fc.iterrows():
+        feat.append(f"| `{r.feature}` | {r.n_images} | {r.spearman:+.2f} |")
+    nl = "\n"
+    return ["## CELESTA-Lite vs published labels", "", nl.join(rows), "", nl.join(idx), "", nl.join(cls), "",
+            nl.join(feat)]
 
 
 def transfer_table(ep: str) -> str:
@@ -67,12 +93,14 @@ def main() -> None:
     for ep, lab in [("os", "OS"), ("dss", "DSS")]:
         out += ["", f"## C Basel calibration {lab}", "", calib_table(f"basel_{ep}")]
     e = s["er_negative"]
-    out += ["", "## D ER-negative subgroup", "", f"- n: {e['n']}", f"- dss_events: {e['dss_events']}", f"- run: {e['run']}"]
+    out += ["", "## D ER-negative subgroup", "", f"- n: {e['n']}", f"- dss_events: {e['dss_events']}", f"- run: {e['run']}",
+            f"- clinical_columns_dropped: {e['clinical_columns_dropped']}"]
     if e["run"]:
         for ep, lab in [("os", "OS"), ("dss", "DSS")]:
             n = f"metabric_erneg_{ep}"
             out += ["", f"### ER-negative {lab}", "", cindex_table(n, OUT), "", diff_table(n, OUT), "",
                     robustness_table(n, OUT)]
+    out += [""] + celesta_tables()
     out += ["", f"runtime_seconds: {s['runtime_seconds']}"]
     (OUT / "tables.md").write_text("\n".join(out) + "\n", encoding="utf-8")
     print(f"wrote {OUT / 'tables.md'}")
