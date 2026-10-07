@@ -49,10 +49,11 @@ def cv_repeat_deltas(
 def permutation_null(
     base_oof: np.ndarray, fs: FeatureSet, X, y, cfg, seeds: list[int], n_perm: int, n_jobs: int = -1
 ) -> np.ndarray:
-    """Null distribution of the seed-averaged delta C(fs with permuted spatial block) - C(base).
+    """Null deltas C(fs with permuted spatial block) - C(base), shape (n_perm, n_seeds).
 
-    base_oof: (n_seeds, n) OOF risks of the base model for `seeds` (base is unaffected by the
-    permutation, so it is not refit).
+    Average over axis 1 for the null of the seed-averaged delta; use single entries to compare
+    with single CV repeats. base_oof: (n_seeds, n) OOF risks of the base model for `seeds`
+    (base is unaffected by the permutation, so it is not refit).
     """
     tasks = [(p, s) for p in range(n_perm) for s in seeds]
     oofs = Parallel(n_jobs=n_jobs)(
@@ -62,4 +63,4 @@ def permutation_null(
     d = np.zeros((n_perm, len(seeds)))
     for (p, s), r in zip(tasks, oofs):
         d[p, seeds.index(s)] = cindex(y, r) - c_base[s]
-    return d.mean(axis=1)
+    return d

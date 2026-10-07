@@ -18,7 +18,7 @@ import sklearn
 import sksurv
 
 from spatialsurv.cv import cindex, run_models
-from spatialsurv.data import CLINICAL_COLS, load_annotations, load_cells, load_patients, survival_array
+from spatialsurv.data import CLINICAL_COLS, IMMUNE, load_annotations, load_cells, load_patients, survival_array
 from spatialsurv.eval import bootstrap, seed_mean_cindex, summarize
 from spatialsurv.features import (
     ALL_SPATIAL_COLS,
@@ -29,7 +29,7 @@ from spatialsurv.features import (
     spatial_features_by_image,
 )
 from spatialsurv.models import FeatureSet
-from spatialsurv.plots import cindex_dotplot, km_plot, spatial_coef_plot
+from spatialsurv.plots import cindex_dotplot, example_cores_plot, headline_plot, km_plot, spatial_coef_plot
 from spatialsurv.robustness import cv_repeat_deltas, permutation_null
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -149,9 +149,12 @@ def robustness(name: str, X: pd.DataFrame, y: np.ndarray, fsets: list[FeatureSet
     out = {}
     for fs in spatial_models:
         d = rep.loc[rep["model"] == fs.name, "delta"]
-        null = permutation_null(oof[M_COMP], fs, X, y, cfg, cfg["seeds"], cfg["n_perm_null"])
+        null_by_seed = permutation_null(oof[M_COMP], fs, X, y, cfg, cfg["seeds"], cfg["n_perm_null"])
+        null = null_by_seed.mean(axis=1)
         obs = float(point[fs.name] - point[M_COMP])
-        pd.DataFrame({"null_delta": null}).to_csv(RES / f"{name}_perm_null_{slug(fs.name)}.csv", index=False)
+        nd = pd.DataFrame(null_by_seed, columns=[f"null_delta_seed{s}" for s in cfg["seeds"]])
+        nd.insert(0, "null_delta", null)
+        nd.to_csv(RES / f"{name}_perm_null_{slug(fs.name)}.csv", index=False)
         out[fs.name] = dict(
             cv_repeats=len(d), delta_mean=float(d.mean()), delta_sd=float(d.std(ddof=1)),
             delta_min=float(d.min()), delta_max=float(d.max()), frac_repeats_gt0=float((d > 0).mean()),
@@ -173,6 +176,46 @@ def spatial_coef_table(res: dict, comp_cols: list[str]) -> pd.DataFrame:
         rows.append(dict(feature=c, mean_coef=v.mean(), sd_coef=v.std(ddof=1),
                          selection_freq=float(np.mean(np.abs(v) > 1e-10))))
     return pd.DataFrame(rows).sort_values("mean_coef", key=np.abs, ascending=False).reset_index(drop=True)
+
+
+def make_overview_figures(img: pd.DataFrame, cfg: dict) -> None:
+    # Headline figure: discrimination per endpoint + spatial delta vs. permutation null.
+    eps = {"OS": "os", "DSS": "dss"}
+    spatial = {"z-score features": M_SPAT, "log O/E (sensitivity)": M_SPAT_OE}
+    cidx = {k: pd.read_csv(RES / f"{v}_cindex.csv") for k, v in eps.items()}
+    reps = {k: pd.read_csv(RES / f"{v}_cv_repeat_deltas.csv") for k, v in eps.items()}
+    nulls = {
+        k: {m: pd.read_csv(RES / f"{v}_perm_null_{slug(m)}.csv").filter(like="null_delta_seed").to_numpy().ravel()
+            for m in spatial.values()}
+        for k, v in eps.items()
+    }
+    headline_plot(cidx, reps, nulls, [M_CLIN, M_COMP, M_SPAT], spatial, FIG / "headline.png")
+
+    # Example tissue. The mixing ratio also depends on how many immune cells there are
+    # (sparse immune cells mostly touch tumor), so examples are drawn from images between the 40th
+    # and 60th percentile of immune fraction, at the 10th/50th/90th percentile of mixing within that band.
+    patients, cores = load_patients(RAW)
+    cells = load_cells(RAW, cores["core"].tolist())
+    n_cls = cells.groupby(["core", "coarse"]).size().unstack(fill_value=0)
+    immune_frac = n_cls[list(IMMUNE)].sum(axis=1) / n_cls.sum(axis=1)
+    feats = img.join(immune_frac.rename("immune_frac"))
+    dep = feats[ALL_SPATIAL_COLS].corrwith(feats["immune_frac"], method="spearman").rename("spearman_vs_immune_frac")
+    dep.to_csv(RES / "spatial_vs_immune_fraction.csv")
+    ok = (n_cls["Tumor"] >= 200) & (n_cls[list(IMMUNE)].sum(axis=1) >= 50)
+    cand = feats.loc[ok[ok].index].dropna(subset=["tumor_immune_mixing"])
+    lo, hi = cand["immune_frac"].quantile([0.4, 0.6])
+    cand = cand[cand["immune_frac"].between(lo, hi)]
+    picks = []
+    for q, lab in [(0.1, "low"), (0.5, "median"), (0.9, "high")]:
+        target = cand["tumor_immune_mixing"].quantile(q)
+        core = (cand["tumor_immune_mixing"] - target).abs().idxmin()
+        r = cand.loc[core]
+        picks.append((core, f"{lab} mixing: {r.tumor_immune_mixing:.2f}  (immune {r.immune_frac:.0%} of cells)\n"
+                            f"Tumor-T enrichment z = {r.enrich_Tumor__T:.1f}; {int(r.n_cells)} cells"))
+    example_cores_plot(cells, picks, FIG / "example_cores.png",
+                       f"Example tumor cores at similar immune content ({lo:.0%}-{hi:.0%} immune cells), "
+                       "low / median / high tumor-immune mixing")
+    pd.DataFrame(picks, columns=["core", "caption"]).to_csv(RES / "example_cores.csv", index=False)
 
 
 def main() -> None:
@@ -232,6 +275,8 @@ def main() -> None:
     diag = img[ALL_SPATIAL_COLS].corrwith(np.log(img["n_cells"]), method="spearman").rename("spearman_vs_log_ncells")
     diag.to_csv(RES / "spatial_vs_ncells.csv")
     summary["spatial_vs_ncells_spearman"] = diag.round(3).to_dict()
+
+    make_overview_figures(img, cfg)
 
     summary["config"] = cfg
     summary["environment"] = dict(python=platform.python_version(), sklearn=sklearn.__version__,

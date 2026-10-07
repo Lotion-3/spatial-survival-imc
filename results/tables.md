@@ -87,6 +87,15 @@
 | `enrich_Stroma__T` | +0.000 | 0.000 | 0% |
 | `enrich_T__B` | +0.000 | 0.000 | 0% |
 
+## Detectable effect size
+
+| Endpoint | Comparison | SD of paired bootstrap ΔC | detectable ΔC (80% power) | with CV-repeat variability |
+|---|---|---|---|---|
+| OS | clinical+composition minus clinical | 0.0120 | 0.034 | n/a |
+| OS | clinical+composition+spatial minus clinical+composition | 0.0035 | 0.010 | 0.014 |
+| DSS | clinical+composition minus clinical | 0.0200 | 0.056 | n/a |
+| DSS | clinical+composition+spatial minus clinical+composition | 0.0079 | 0.022 | 0.032 |
+
 ## Penalty and sparsity
 
 | Endpoint | Model | selected penalty α: median [min, max] | non-zero omics coefs: median [min, max] |
@@ -100,21 +109,21 @@
 | DSS | clinical+composition+spatial | 0.0566 [0.0256, 0.155] | 10 [0, 20] |
 | DSS | clinical+composition+spatial (log O/E, sensitivity) | 0.0511 [0.0256, 0.146] | 11 [0, 21] |
 
-## Spatial features vs. image size
+## Spatial features vs. image size and immune content
 
-| Feature | Spearman ρ with log(cells), z-score version | log O/E version |
-|---|---|---|
-| `enrich_Tumor__Tumor` | +0.55 | -0.29 |
-| `enrich_Tumor__T` | -0.44 | -0.03 |
-| `enrich_Tumor__Macrophage` | -0.30 | -0.02 |
-| `enrich_Tumor__B` | -0.21 | +0.06 |
-| `enrich_Tumor__Stroma` | -0.41 | -0.21 |
-| `enrich_Tumor__Endothelial` | -0.51 | -0.10 |
-| `enrich_T__Macrophage` | +0.30 | +0.30 |
-| `enrich_T__B` | -0.03 | -0.06 |
-| `enrich_Stroma__T` | +0.39 | +0.38 |
-| `tumor_immune_nbr_frac` | -0.17 | (same feature) |
-| `tumor_immune_mixing` | +0.19 | (same feature) |
+| Feature | ρ with log(cells): z-score | ρ with log(cells): log O/E | ρ with immune fraction: z-score | ρ with immune fraction: log O/E |
+|---|---|---|---|---|
+| `enrich_Tumor__Tumor` | +0.55 | -0.29 | +0.24 | +0.67 |
+| `enrich_Tumor__T` | -0.44 | -0.03 | -0.43 | -0.24 |
+| `enrich_Tumor__Macrophage` | -0.30 | -0.02 | -0.15 | -0.21 |
+| `enrich_Tumor__B` | -0.21 | +0.06 | -0.47 | -0.42 |
+| `enrich_Tumor__Stroma` | -0.41 | -0.21 | +0.38 | +0.12 |
+| `enrich_Tumor__Endothelial` | -0.51 | -0.10 | +0.22 | -0.06 |
+| `enrich_T__Macrophage` | +0.30 | +0.30 | +0.11 | -0.34 |
+| `enrich_T__B` | -0.03 | -0.06 | +0.31 | -0.08 |
+| `enrich_Stroma__T` | +0.39 | +0.38 | -0.47 | -0.65 |
+| `tumor_immune_nbr_frac` | -0.17 | (same feature) | +0.92 | (same feature) |
+| `tumor_immune_mixing` | +0.19 | (same feature) | -0.89 | (same feature) |
 
 ## Kaplan-Meier
 
@@ -122,4 +131,4 @@
 - clinical-only model: log-rank p = 8.3e-10
 - patients assigned to the same risk half by both: 94%
 
-runtime_seconds: 322.0
+runtime_seconds: 365.1
