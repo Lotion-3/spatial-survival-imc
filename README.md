@@ -471,6 +471,10 @@ It is independent of, and not endorsed by, the original authors.
 
    With the reference EP, a quarter of all cells fall to the artifact filter (every marker EP below 0.4, or every one above 0.9), and the method finds almost no T cells. Its higher agreement comes from abstaining: it labels only the cells whose panCK or CD20 signal is unambiguous. The posterior EP restores a usable CD3 contrast (0.71 vs. 0.47), at the price of lower agreement on a much larger set of cells. Reproduce with the `v1_reference_ep` run.
 
+   ![Reference vs posterior EP on one core](figures/celesta_ep_methods.png)
+
+   *The same core as the example below. With the reference EP, the published T cells (orange) disappear and most stromal and immune cells end up Unknown. With the posterior EP they are typed again.*
+
 ![CELESTA-Lite example core](figures/celesta_example_core_v1.png)
 
 **Applied to all 1,066,966 METABRIC tumour cells** (cohort-level marker mixtures, then the MRF per image). It runs in about 2 minutes on a laptop. Agreement is measured against the published phenotypes, which are themselves clustering output, so this is concordance and not accuracy:

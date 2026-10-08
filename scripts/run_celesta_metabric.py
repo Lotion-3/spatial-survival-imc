@@ -128,13 +128,17 @@ def per_class(truth: pd.Series, pred: pd.Series) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def example_figure(c: pd.DataFrame, core: str, out: Path) -> None:
+EXAMPLE_PANELS = {"published": "Published phenotypes", "marker_only_coarse": "CELESTA-Lite, markers only",
+                  "celesta_coarse": "CELESTA-Lite, markers + spatial MRF"}
+
+
+def example_figure(c: pd.DataFrame, core: str, out: Path, panels: dict = EXAMPLE_PANELS,
+                   title: str = "cell typing compared") -> None:
     from spatialsurv.plots import CELL_COLOURS, INK, SURFACE  # same colours as the part I tissue figure
 
     d = c[c["core"] == core]
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4.8))
-    for ax, col, title in zip(axes, ["published", "marker_only_coarse", "celesta_coarse"],
-                              ["Published phenotypes", "CELESTA-Lite, markers only", "CELESTA-Lite, markers + spatial MRF"]):
+    fig, axes = plt.subplots(1, len(panels), figsize=(13, 4.8))
+    for ax, (col, title_) in zip(axes, panels.items()):
         for cls, colour in list(CELL_COLOURS.items()) + [(UNKNOWN, "#ffffff")]:
             m = d[col] == cls
             ax.scatter(d.loc[m, "Location_Center_X"], d.loc[m, "Location_Center_Y"], s=4, c=colour,
@@ -146,11 +150,11 @@ def example_figure(c: pd.DataFrame, core: str, out: Path) -> None:
         ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_visible(False)
-        ax.set_title(title, loc="left", fontsize=10, color=INK)
+        ax.set_title(title_, loc="left", fontsize=10, color=INK)
     handles = [plt.Line2D([], [], ls="", marker="o", ms=7, color=v, label=k) for k, v in CELL_COLOURS.items()]
     handles.append(plt.Line2D([], [], ls="", marker="o", ms=7, mfc="#ffffff", mec="#8a8984", label="Unknown"))
     fig.legend(handles=handles, loc="lower center", ncol=7, frameon=False)
-    fig.suptitle(f"{core}: cell typing compared", x=0.01, ha="left", fontsize=11, color=INK)
+    fig.suptitle(f"{core}: {title}", x=0.01, ha="left", fontsize=11, color=INK)
     fig.set_facecolor(SURFACE)
     fig.savefig(out, dpi=160, bbox_inches="tight")
     plt.close(fig)
@@ -249,8 +253,24 @@ def main(version: str) -> None:
     print(f"done in {summary['runtime_seconds']}s")
 
 
+def ep_method_figure() -> None:
+    """Same core as the v1 example: published labels vs. CELESTA-Lite with the reference and the posterior EP."""
+    core = json.loads((OUT / "v1" / "summary.json").read_text())["example_core"]["core"]
+    c = load_cells()[["core", "published", "Location_Center_X", "Location_Center_Y"]]
+    for run, col in [("v1_reference_ep", "reference"), ("v1", "posterior")]:
+        lab = pd.read_csv(OUT / run / "cell_labels.csv.gz", usecols=["core", "celesta_coarse"])
+        assert (lab["core"].to_numpy() == c["core"].to_numpy()).all(), "label file not aligned with cells"
+        c[col] = lab["celesta_coarse"].to_numpy()
+    example_figure(c, core, FIG / "celesta_ep_methods.png",
+                   {"published": "Published phenotypes", "reference": "CELESTA-Lite, reference EP (sigmoid)",
+                    "posterior": "CELESTA-Lite, posterior EP (this port)"},
+                   "expression-probability method compared (v1 signature, markers + spatial MRF)")
+
+
 if __name__ == "__main__":
     import sys
 
     for v in (sys.argv[1:] or list(RUNS)):
         main(v)
+    if all((OUT / r / "cell_labels.csv.gz").exists() for r in ("v1", "v1_reference_ep")):
+        ep_method_figure()
