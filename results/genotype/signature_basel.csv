@@ -1,0 +1,7 @@
+cell_type,Lineage_level,panCK,CD3,CD20,CD68,CD31-vWF,SMA
+Tumour,1_0_1,1,0,0,0,0,NA
+T cell,1_0_2,0,1,0,0,NA,NA
+B cell,1_0_3,0,0,1,NA,NA,NA
+Macrophage,1_0_4,0,0,0,1,NA,NA
+Endothelial,1_0_5,0,0,NA,0,1,NA
+Stroma,1_0_6,0,0,0,0,0,1

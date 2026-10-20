@@ -9,6 +9,8 @@ Usage:
     python scripts/download_data.py --list               # list record files + archive members
     python scripts/download_data.py                      # fetch needed tables into data/raw
     python scripts/download_data.py --metabric           # also METABRIC IMC + clinical (part II)
+    python scripts/download_data.py --genomics           # also METABRIC mutations + gene panel (part IV)
+    python scripts/download_data.py --basel-expression   # also Basel per-cell marker intensities (part IV)
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ import io
 import json
 import shutil
 import sys
+import time
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -202,10 +205,123 @@ def fetch_metabric() -> None:
     print(f"METABRIC: {len(clin)} clinical patients; wrote {RAW_MB / 'MANIFEST.json'}")
 
 
+# --------------------------------------------------------------------------- METABRIC genomics (part IV)
+
+CBIO_API = "https://www.cbioportal.org/api"
+MUT_PROFILE = "brca_metabric_mutations"
+SEQUENCED = "brca_metabric_sequenced"
+
+
+def cbio(path: str, body: dict | None = None):
+    req = urllib.request.Request(  # cBioPortal rejects urllib's default User-Agent (403)
+        f"{CBIO_API}/{path}", data=None if body is None else json.dumps(body).encode(),
+        headers={"User-Agent": "spatialsurv/0.1 (research script)", "Accept": "application/json",
+                 "Content-Type": "application/json"},
+        method="GET" if body is None else "POST",
+    )
+    with urllib.request.urlopen(req, timeout=300) as r:
+        return json.load(r)
+
+
+def fetch_genomics() -> None:
+    """Somatic mutations (targeted panel), the sequenced-sample list and the gene panel(s).
+
+    Subtype (CLAUDIN_SUBTYPE), IntClust and ER/PR/HER2 are clinical attributes, already in
+    metabric_clinical.json (--metabric). The API is live, so the snapshot date is recorded.
+    """
+    RAW_MB.mkdir(parents=True, exist_ok=True)
+    muts = cbio(f"molecular-profiles/{MUT_PROFILE}/mutations/fetch?projection=DETAILED", {"sampleListId": SEQUENCED})
+    keep = ["sampleId", "patientId", "entrezGeneId", "mutationType", "variantType", "proteinChange", "mutationStatus"]
+    rows = [{k: m.get(k) for k in keep} | {"hugoGeneSymbol": m["gene"]["hugoGeneSymbol"]} for m in muts]
+    sequenced = cbio(f"sample-lists/{SEQUENCED}")["sampleIds"]
+    panel_data = cbio(f"molecular-profiles/{MUT_PROFILE}/gene-panel-data/fetch", {"sampleListId": SEQUENCED})
+    panel_of = {d["sampleId"]: d.get("genePanelId") for d in panel_data}
+    panels = {}
+    for pid in sorted({p for p in panel_of.values() if p}):
+        panels[pid] = sorted(g["hugoGeneSymbol"] for g in cbio(f"gene-panels/{pid}")["genes"])
+    out = {
+        "mutations": RAW_MB / "metabric_mutations.json",
+        "sequenced": RAW_MB / "metabric_sequenced_samples.json",
+        "panels": RAW_MB / "metabric_gene_panels.json",
+    }
+    out["mutations"].write_text(json.dumps(rows, indent=0))
+    out["sequenced"].write_text(json.dumps({"sampleIds": sorted(sequenced), "genePanelId": panel_of}, indent=0))
+    out["panels"].write_text(json.dumps(panels, indent=1))
+    snapshot = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    manifest_path = ROOT / "results" / "genotype" / "data_manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    manifest["cbioportal_genomics"] = {
+        "snapshot": snapshot, "api": CBIO_API, "study": "brca_metabric", "mutation_profile": MUT_PROFILE,
+        "sample_list": SEQUENCED, "n_mutations": len(rows), "n_sequenced_samples": len(sequenced),
+        "gene_panels": {k: len(v) for k, v in panels.items()},
+        "files": {p.name: {"md5": md5(p), "bytes": p.stat().st_size} for p in out.values()},
+    }
+    clin = RAW_MB / "metabric_clinical.json"
+    if clin.exists():  # subtype / IntClust / receptor status come from the --metabric clinical snapshot
+        manifest["cbioportal_clinical"] = {
+            "file": clin.name, "md5": md5(clin), "source": CBIO,
+            "snapshot_file_mtime": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(clin.stat().st_mtime)),
+            "note": "snapshot taken by --metabric (part II); not re-fetched, so part II numbers are unaffected"}
+    manifest_path.write_text(json.dumps(manifest, indent=2))
+    print(f"genomics: {len(rows)} mutations, {len(sequenced)} sequenced samples, panels {list(panels)}; "
+          f"wrote {manifest_path}")
+
+
+# --------------------------------------------------------------------------- Basel expression (part IV)
+
+SC_DAT = "Data_publication/BaselTMA/SC_dat.csv"  # long format: core, CellId, id, channel, mc_counts (~4.9 GB)
+# Metal tags of the channels kept (Basel_Zuri_StainingPanel.csv). Lineage markers shared with the
+# METABRIC panel, plus a few Basel-only ones used only for descriptive heatmaps.
+BASEL_METALS = {
+    "Lu175": "panCK", "Nd144": "CK8-18", "Pr141": "CK5", "Sm152": "CD3", "Dy164": "CD20", "Nd146": "CD68",
+    "Yb172": "CD31-vWF", "Nd148": "SMA", "Dy162": "CD45", "Sm149": "Vimentin", "Nd142": "Fibronectin",
+    "Eu151": "HER2", "Er168": "Ki-67", "In113": "Histone H3",
+}
+
+
+def fetch_basel_expression(files: dict[str, dict]) -> None:
+    """Stream SC_dat.csv out of the 37 GB archive by HTTP range requests (~0.6 GB compressed),
+    keep only BASEL_METALS channels and pivot to one row per cell. The full member never touches
+    disk; zipfile verifies its CRC32 once the stream is read to the end."""
+    import pandas as pd
+
+    dest = RAW / "basel_expression.csv.gz"
+    zf, raw = open_remote_zip(files[BIG_ARCHIVE], buffer_size=32 << 20)
+    zi = zf.getinfo(SC_DAT)
+    print(f"streaming {SC_DAT} ({zi.compress_size / 1e6:.0f} MB compressed, {zi.file_size / 1e9:.1f} GB)")
+    pattern = "|".join(f"{m}Di" for m in BASEL_METALS)
+    parts, seen = [], set()
+    with zf.open(zi) as src:
+        for chunk in pd.read_csv(src, chunksize=5_000_000, usecols=["core", "CellId", "channel", "mc_counts"],
+                                 dtype={"core": "category", "CellId": "int32", "channel": "category",
+                                        "mc_counts": "float32"}):
+            seen |= set(chunk["channel"].cat.categories)
+            chunk = chunk[chunk["channel"].astype(str).str.contains(pattern)]
+            parts.append(chunk.astype({"core": str, "channel": str}))
+    long = pd.concat(parts, ignore_index=True)
+    metal = long["channel"].str.extract(r"([A-Z][a-z]?\d{2,3})Di", expand=False)
+    long["marker"] = metal.map(BASEL_METALS)
+    wide = long.pivot_table(index=["core", "CellId"], columns="marker", values="mc_counts", aggfunc="first")
+    wide = wide.reset_index()
+    wide.columns.name = None
+    wide.to_csv(dest, index=False, compression="gzip", float_format="%.6g")
+    kept = sorted({c for c in seen if any(f"{m}Di" in c for m in BASEL_METALS)})
+    manifest = json.loads((RAW / "MANIFEST.json").read_text()) if (RAW / "MANIFEST.json").exists() else {}
+    manifest[SC_DAT] = {"crc32": f"{zi.CRC:08x}", "source": f"{BIG_ARCHIVE}::{SC_DAT}", "channels_kept": kept,
+                        "derived_file": dest.name, "derived_md5": md5(dest), "n_cells": int(len(wide)),
+                        "range_bytes_fetched": raw.bytes_fetched}
+    (RAW / "MANIFEST.json").write_text(json.dumps(manifest, indent=2))
+    print(f"Basel expression: {len(wide)} cells x {len(kept)} channels; {raw.bytes_fetched / 1e6:.0f} MB fetched")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--list", action="store_true", help="only list files and archive members")
     ap.add_argument("--metabric", action="store_true", help="also fetch the METABRIC IMC cells + clinical (part II)")
+    ap.add_argument("--genomics", action="store_true", help="also fetch METABRIC mutations + gene panel (part IV)")
+    ap.add_argument("--basel-expression", action="store_true",
+                    help="also stream Basel per-cell marker intensities out of the big archive (part IV)")
     args = ap.parse_args()
     files = record_files()
     if args.list:
@@ -214,6 +330,10 @@ def main() -> None:
     fetch(files)
     if args.metabric:
         fetch_metabric()
+    if args.genomics:
+        fetch_genomics()
+    if args.basel_expression:
+        fetch_basel_expression(files)
 
 
 if __name__ == "__main__":

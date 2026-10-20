@@ -1,0 +1,10 @@
+cell_type,Lineage_level,panCK,CD3,CD20,CD68,CD31-vWF,SMA,CD8,CD4,FOXP3
+Tumour,1_0_1,1,0,0,0,0,NA,NA,NA,NA
+T cell,1_0_2,0,1,0,0,NA,NA,NA,NA,NA
+B cell,1_0_3,0,0,1,NA,NA,NA,NA,NA,NA
+Macrophage,1_0_4,0,0,0,1,NA,NA,NA,NA,NA
+Endothelial,1_0_5,0,0,NA,0,1,NA,NA,NA,NA
+Stroma,1_0_6,0,0,0,0,0,1,NA,NA,NA
+CD8 T cell,2_2_7,NA,NA,NA,NA,NA,NA,1,0,0
+CD4 T cell,2_2_8,NA,NA,NA,NA,NA,NA,0,1,0
+Treg,2_2_9,NA,NA,NA,NA,NA,NA,0,NA,1

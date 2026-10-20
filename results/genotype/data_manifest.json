@@ -1,0 +1,35 @@
+{
+  "cbioportal_genomics": {
+    "snapshot": "2026-10-19T23:37:01-0400",
+    "api": "https://www.cbioportal.org/api",
+    "study": "brca_metabric",
+    "mutation_profile": "brca_metabric_mutations",
+    "sample_list": "brca_metabric_sequenced",
+    "n_mutations": 13183,
+    "n_sequenced_samples": 2433,
+    "gene_panels": {
+      "METABRIC_173": 173
+    },
+    "files": {
+      "metabric_mutations.json": {
+        "md5": "83693c8aff0e965f0b023f6d67867676",
+        "bytes": 2910275
+      },
+      "metabric_sequenced_samples.json": {
+        "md5": "36b616a7810f6e15c5d0f7e969149018",
+        "bytes": 99459
+      },
+      "metabric_gene_panels.json": {
+        "md5": "dc83cc7e4ab057848757c3845ed95c0a",
+        "bytes": 2108
+      }
+    }
+  },
+  "cbioportal_clinical": {
+    "file": "metabric_clinical.json",
+    "md5": "a12bf0d388ba1e079505f1bc7fd1a47d",
+    "source": "https://www.cbioportal.org/api/studies/brca_metabric/clinical-data",
+    "snapshot_file_mtime": "2026-10-07T01:33:47-0400",
+    "note": "snapshot taken by --metabric (part II); not re-fetched, so part II numbers are unaffected"
+  }
+}

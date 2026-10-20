@@ -1,0 +1,26 @@
+{
+  "n_cells": 2434,
+  "runtime_seconds": 1.2,
+  "assigned_fraction": 0.8164,
+  "filtered_fraction": 0.0008,
+  "label_counts": {
+    "aSMA+ stroma": 428,
+    "B cells": 3,
+    "CD15+ granulocytes": 140,
+    "CD3+ T cells": 37,
+    "CD4+ T cells": 44,
+    "CD4+ T cells CD45RO+": 286,
+    "CD68+CD163+ macrophages": 159,
+    "CD8+ T cells": 121,
+    "immune cells": 468,
+    "plasma cells": 53,
+    "Tregs": 65,
+    "tumor cells": 49,
+    "Unknown": 445,
+    "vasculature": 134,
+    "15": 2
+  },
+  "reference_file": "third_party/CELESTA/tests/testthat/project_title_final_cell_type_assignment.csv",
+  "agreement_with_reference": 1,
+  "completed": true
+}

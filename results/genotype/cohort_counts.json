@@ -1,0 +1,115 @@
+{
+  "metabric": {
+    "imc_patients": 693,
+    "imc_images": 749,
+    "cells": 1066966,
+    "linked_to_cbioportal_genomics_or_subtype": 588,
+    "sequenced": 568,
+    "pam50_raw": {
+      "LumA": 208,
+      "LumB": 152,
+      "nan": 106,
+      "claudin-low": 88,
+      "Her2": 55,
+      "Normal": 42,
+      "Basal": 42
+    },
+    "TP53_status": {
+      "wild-type": 376,
+      "mutant": 192,
+      "not called": 125
+    },
+    "PIK3CA_status": {
+      "wild-type": 328,
+      "mutant": 240,
+      "not called": 125
+    },
+    "BRCA1_status": {
+      "wild-type": 562,
+      "not called": 125,
+      "mutant": 6
+    },
+    "CASP8_status": {
+      "wild-type": 558,
+      "not called": 125,
+      "mutant": 10
+    },
+    "TP53_by_pam50": {
+      "Basal": {
+        "NA": 2,
+        "mut": 38,
+        "wt": 2
+      },
+      "Her2": {
+        "NA": 0,
+        "mut": 38,
+        "wt": 17
+      },
+      "LumA": {
+        "NA": 3,
+        "mut": 28,
+        "wt": 177
+      },
+      "LumB": {
+        "NA": 7,
+        "mut": 42,
+        "wt": 103
+      },
+      "claudin-low": {
+        "NA": 7,
+        "mut": 35,
+        "wt": 46
+      },
+      "other/NA": {
+        "NA": 106,
+        "mut": 11,
+        "wt": 31
+      }
+    },
+    "PIK3CA_by_pam50": {
+      "Basal": {
+        "NA": 2,
+        "mut": 7,
+        "wt": 33
+      },
+      "Her2": {
+        "NA": 0,
+        "mut": 21,
+        "wt": 34
+      },
+      "LumA": {
+        "NA": 3,
+        "mut": 111,
+        "wt": 94
+      },
+      "LumB": {
+        "NA": 7,
+        "mut": 54,
+        "wt": 91
+      },
+      "claudin-low": {
+        "NA": 7,
+        "mut": 28,
+        "wt": 53
+      },
+      "other/NA": {
+        "NA": 106,
+        "mut": 19,
+        "wt": 23
+      }
+    }
+  },
+  "basel": {
+    "patients_with_cells": 280,
+    "patients_dropped_no_os_time_by_loader": 1,
+    "images": 288,
+    "cells_with_expression": 762776,
+    "cells_with_labels_and_location": 762776,
+    "surrogate": {
+      "ER+/HER2-": 179,
+      "HER2+": 52,
+      "TN": 47,
+      "nan": 2
+    }
+  }
+}
