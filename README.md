@@ -1,13 +1,358 @@
-# Do spatial tumor-microenvironment features add prognostic value in breast cancer?
+# Do breast cancer subtype and genotype shape spatial organisation beyond cell composition?
 
-> **Part IV** asks a separate, descriptive question: do breast cancer subtype and genotype shape spatial organisation beyond cell composition? It uses CELESTA cell typing and co-location quotients (CLQ).
-> → [Part IV](#part-iv-tumour-genotype-and-spatial-organisation) · [docs/GENOTYPE_MEMO.md](docs/GENOTYPE_MEMO.md)
+This analysis uses imaging mass cytometry (IMC) from two breast cancer cohorts: METABRIC (Danenberg et al. 2022, *Nature Genetics*) and Basel (Jackson et al. 2020, *Nature*). CELESTA assigns the cell types, and co-location quotients (CLQ) measure which cell types sit next to which. The study is descriptive and associative and makes no prognostic claim. Hypotheses, numeric predictions and pass rules were committed to git before any subtype or mutation label was linked to a spatial feature ([HYPOTHESES_GENOTYPE.md](HYPOTHESES_GENOTYPE.md)).
+
+## The question
+
+- **Q1:** Do breast cancer subtypes (PAM50: Luminal A, Luminal B, HER2-enriched, Basal-like, plus claudin-low) differ in how their cells are arranged, beyond how many cells of each type they contain?
+- **Q2:** Is TP53 mutation (and, secondarily, PIK3CA) associated with a distinct arrangement within subtype?
+- **Q3:** Do METABRIC's subtype differences replicate in Basel, using receptor-based surrogate subtypes (ER⁺/HER2⁻, HER2⁺, triple-negative)?
+
+## How the tools were used
+
+- **Cell typing: CELESTA** (Zhang et al., *Nature Methods* 2022).
+  - The official R package was used unmodified (plevritis-lab/CELESTA @ `e5e92ff`). Its bundled example reproduces the package's reference output for all 2,434 demo cells.
+  - The signature uses the lineage markers both IMC panels share: panCK, CD3, CD20, CD68, CD31-vWF and SMA. These give Tumour, T, B, macrophage, endothelial and stromal cells. In METABRIC a second round splits T cells into CD8 T, CD4 T and Treg.
+  - IMC counts were rescaled before input so that marker intensities span the range the package's expression-probability step expects. The rule was fixed in advance on 20 seeded images per cohort.
+  - Package thresholds were left at their defaults.
+  - All 749 METABRIC and 288 Basel tumour images were typed. Every class is assigned in ≥ 96% of images where its defining marker is present.
+- **Co-location: CLQ.**
+  - The published CLQ functions were used unmodified (plevritis-lab/Spatial_Permutation_and_Normalization @ `02b6da5`).
+  - CLQ_{b→a} = (C_{b→a}/N_a)/(N_b/(N−1)), computed on the k nearest neighbours (k = 10, 20, 40) and reported so that 1 means random.
+  - 500 within-image label permutations at k = 20 confirm the null is centred on 1.
+- **Statistics:** patient-level linear models, CLQ ~ group + CLR composition + log cell count + age + grade.
+  - Benjamini–Hochberg control is applied within each pre-specified family.
+  - The models are repeated without the composition terms, to separate arrangement from amount.
+  - Robustness checks: subtype-label permutations, consistency across k, and a refit on the published cell labels.
+- **Data:**
+  - METABRIC: 693 patients, of whom 588 are linked to cBioPortal PAM50 and the 173-gene mutation panel.
+  - Basel: 280 patients.
+
+## What it found, and how that compares with existing research
+
+- **Arrangement beyond amount (Q1).** Two pre-specified test families were run, both adjusted for composition.
+  - **Omnibus subtype tests:** one F-test per ordered pair and k, asking whether any PAM50 subtype differs, across nine classes. None survives FDR control after composition adjustment (0 of 243), against 7 without it. The subtype differences in co-location seen here are largely differences in composition.
+  - **Pre-specified Basal − LumA and HER2-enriched − LumA contrasts:** these use the six classes shared with Basel. Three ordered pairs reached q < 0.05 at all three k, all Basal − LumA:
+    - macrophage → endothelial (higher in Basal);
+    - endothelial → macrophage (higher in Basal);
+    - macrophage → tumour (lower in Basal).
+  - **Why the two families differ:** a single contrast is a sharper test than a four-subtype omnibus test, and the two families have different sizes. For macrophage → tumour, the omnibus test gives q = 0.11 and the contrast gives q = 0.015, for nearly the same estimate.
+- **Replication (Q3).** Macrophage–endothelial co-localisation is higher in basal-like tumours in METABRIC and in triple-negative tumours in Basel, at every k. Macrophage → tumour did not replicate.
+- **Genotype (Q2).** No TP53 or PIK3CA association survives FDR control. The strongest lead is exploratory: fewer tumour cells around CD8 T cells in TP53-mutant tumours (−0.09 at every k, p = 0.003–0.005, q = 0.27).
+- **Pre-registered hypotheses.** None of the following was supported:
+  - H1, more CD8 T–tumour co-location in Basal than LumA: −0.047 [−0.157, 0.064].
+  - H2, TP53 and macrophage–tumour co-location in ER⁺ tumours.
+  - Zhang et al.'s node-status question (d), tumour–Treg co-location in node-positive tumours.
+- **Positive controls.** These were only partly reproduced, so the nulls mean "not detected with this signature, scaling and single cores", not "absent".
+
+**Comparison with existing research:**
+
+| Prior result | This analysis | Verdict |
+|---|---|---|
+| More immune cells in basal-like/TN (Ali 2020, Denkert 2018, Jackson 2020) | immune fraction Basal +0.105 (METABRIC), TN +0.114 (Basel) | agrees |
+| More immune cells in HER2-enriched (Denkert 2018) | +0.040 with CELESTA labels (p 0.242); +0.075 with published labels | partly agrees (depends on the cell typing) |
+| Immune cells excluded from the tumour mass (Jackson 2020) | median Tumour -> T and Tumour -> Macrophage CLQ 0.50-0.88 across subtypes and cohorts | agrees |
+| T cells sit near endothelium (Jackson 2020) | median T -> Endothelial CLQ 1.05-1.41 | agrees |
+| Homotypic 'separation phenotype' in basal-like (Ali 2020) | Basal - LumA: Tumour -> Tumour -0.260, Stroma -> Stroma +0.329 (both CIs include 0) | not reproduced |
+| TLS-like B-T structures in basal-like (Danenberg 2022) | Basal - LumA: B -> T +0.122, T -> B +0.059 (both CIs include 0) | not reproduced (same direction only) |
+| Treg-T 'suppressed expansion' in ER-negative/basal and BRCA1 (Danenberg 2022) | Basal - LumA: Treg -> CD8 T -0.036, Treg -> CD4 T -0.051; BRCA1-mutant patients with a defined pair: 4 | not reproduced / BRCA1 not testable |
+| Tumour-Treg co-localisation higher in node-positive disease (Zhang 2022, HNSCC) | CELESTA labels -0.006 (p 0.846); published labels +0.126 (p 0.118, n = 88) | not reproduced; no earlier breast-cancer test found |
+
+The well-established composition differences are reproduced. The finer interaction patterns reported with 32–57 clustered phenotypes and other neighbourhood definitions are not. That comparison is approximate: this analysis maps those findings onto six to nine cell classes and kNN co-location.
+
+New beyond these papers:
+- Composition explains the subtype differences in co-location seen here.
+- Macrophage–endothelial co-localisation is higher in basal-like/TN tumours, and this replicates across cohorts.
+- TP53 within subtype has no FDR-significant arrangement effect.
+- We found no earlier breast-cancer test of the node-status question (d); here it is null.
+
+![METABRIC vs Basel replication](figures/genotype_replication.png)
+
+*Every METABRIC Basal − LumA and HER2-enriched − LumA contrast against its Basel triple-negative and HER2⁺ counterpart, using the six cell classes both cohorts share. Red points are the METABRIC discoveries.*
+
+**Main limitations:**
+- **Single TMA cores:** one small core per patient.
+- **Targeted mutation panel:** BRCA1 (6 mutant patients) and TP53 within basal tumours (2 wild-type) cannot be tested.
+- **Cross-sectional design.**
+- **Scaling and signature:** a pre-declared IMC scaling and a small shared six-marker signature. With these, the Treg class agrees poorly with the published labels.
+
+A one-page summary is in [docs/GENOTYPE_MEMO.md](docs/GENOTYPE_MEMO.md).
+
+## Contents
+
+- [Details: cell typing, hypotheses, test families, replication, deviations, limitations](#part-iv-tumour-genotype-and-spatial-organisation)
+- [Earlier parts of this repository: do spatial features add prognostic value? (Parts I–III)](#parts-iiii-do-spatial-features-add-prognostic-value)
+- [Reproduction](#8-reproduction) · [Caveats](#9-caveats-and-limitations) · [References](#references)
+
+Choices left open by the plan or the packages are recorded in [AMBIGUITIES_GENOTYPE.md](AMBIGUITIES_GENOTYPE.md); prior-work expectations are in [PRIOR_EXPECTATIONS.md](PRIOR_EXPECTATIONS.md).
+
+---
+
+## Part IV: tumour genotype and spatial organisation
+
+The question, how the tools were used and the main results are summarised at the top of this README. This section gives the details.
+
+### IV.1 Approach
+
+**Cell typing.** This part applies CELESTA (Zhang et al., *Nature Methods* 2022) as the cell-typing engine. It uses the authors' R package unmodified (plevritis-lab/CELESTA @ `e5e92ff`), not the Python port of Part III.
+- **Markers.** The signature uses the lineage markers present in both panels: panCK, CD3, CD20, CD68, CD31-vWF and SMA.
+- **Classes.** Round 1 gives Tumour, T, B, macrophage, endothelial and stroma. In METABRIC only, round 2 splits T cells into CD8 T, CD4 T and Treg; Basel has no CD4, CD8 or FOXP3.
+- **Why the input is rescaled.** IMC counts were rescaled before input so that marker intensities span the range the package's expression-probability step expects; the rule was fixed in advance (AMBIGUITIES_GENOTYPE.md). The transform is arcsinh(x/1), with each channel divided by its cohort 99th percentile × 10.
+- **How the scaling was chosen.** On 20 seeded images per cohort, by a rule fixed in advance that uses only assignment rate, filtered fraction and class presence.
+- **Thresholds.** Package defaults.
+
+**Co-location.** The Plevritis lab's own CLQ code was used (plevritis-lab/Spatial_Permutation_and_Normalization @ `02b6da5`, the "colocatome" code), with its functions evaluated unmodified.
+- **Formula.** CLQ_{b→a} = (C_{b→a}/N_a)/(N_b/(N−1)), where C counts type-b cells among the k nearest neighbours of type-a cells.
+- **Scale.** The lab's implementation counts neighbours rather than fractions, so its CLQ is k × the textbook value. We report CLQ/k, for which 1 means random.
+- **Neighbourhoods.** The lab code uses k nearest neighbours only, so k = 20 (the lab default), 10 and 40 replace the planned 20/40/80 µm radii.
+- **Permutations.** 500 within-image label permutations at k = 20 give per-image significance and confirm the null is centred on 1.
+
+**Models.** Patient-level linear models:
+
+    CLQ ~ group + CLR composition + log typed cells + age + grade
+
+- Benjamini–Hochberg is applied within each pre-specified family: the omnibus subtype F-tests (243), TP53 (243), PIK3CA (243) and the Basal/HER2-enriched − LumA replication contrasts (216).
+- Hypotheses, numeric predictions and pass rules were committed before any label was linked (`HYPOTHESES_GENOTYPE.md`, commit `e6e9389`), together with what prior work predicts (`PRIOR_EXPECTATIONS.md`).
+- Every choice that the plan or the packages left open is in `AMBIGUITIES_GENOTYPE.md`, including a table of which code (original or new) ran each step.
+
+**Data.**
+- **METABRIC:** 749 invasive-tumour images and 693 patients.
+  - 588 patients link to cBioPortal subtype or sequencing (METABRIC_173 panel).
+  - PAM50: LumA 208, LumB 152, claudin-low 88, HER2-enriched 55, Basal 42.
+- **Basel:** 288 images and 280 patients, with per-cell intensities streamed from the Zenodo archive.
+  - Surrogate subtypes: ER⁺/HER2⁻ 179, HER2⁺ 52, TN 47.
+
+### IV.2 Cell typing
+
+| Cohort | Class | Defining marker | Images with marker | Images assigned | Share |
+|---|---|---|---|---|---|
+| metabric | Tumour | panCK | 709 | 707 | 0.997 |
+| metabric | T cell | CD3 | 725 | 696 | 0.960 |
+| metabric | B cell | CD20 | 710 | 695 | 0.979 |
+| metabric | Macrophage | CD68 | 737 | 737 | 1.000 |
+| metabric | Endothelial | CD31-vWF | 746 | 746 | 1.000 |
+| metabric | Stroma | SMA | 745 | 744 | 0.999 |
+| metabric | CD8 T cell | CD8 | 728 | 718 | 0.986 |
+| metabric | CD4 T cell | CD4 | 729 | 712 | 0.977 |
+| metabric | Treg | FOXP3 | 742 | 720 | 0.970 |
+| basel | Tumour | panCK | 277 | 277 | 1.000 |
+| basel | T cell | CD3 | 287 | 287 | 1.000 |
+| basel | B cell | CD20 | 286 | 286 | 1.000 |
+| basel | Macrophage | CD68 | 285 | 285 | 1.000 |
+| basel | Endothelial | CD31-vWF | 287 | 287 | 1.000 |
+| basel | Stroma | SMA | 286 | 286 | 1.000 |
+
+- **Acceptance:** every class is assigned in ≥ 96% of the images where its defining marker is present (at least 5 cells above the package's own GMM crossing point). The acceptance bar was 80%.
+- **Concordance with the published labels:** reported as concordance only, without judging either labelling. At the round-1 level it is 0.73 in both cohorts (κ 0.55 and 0.57).
+- **The METABRIC T-cell subclasses agree much less:**
+
+| CELESTA class | Published class | CELESTA cells | Published cells | Share of CELESTA in published | Share of published recovered | CELESTA cells published as epithelial |
+|---|---|---|---|---|---|---|
+| CD8 T cell | CD8+ T cells | 33,005 | 34,588 | 0.492 | 0.469 | 8,393 |
+| CD4 T cell | CD4+ T cells | 27,581 | 15,647 | 0.149 | 0.263 | 8,412 |
+| Treg | TReg & TEx | 25,432 | 6,318 | 0.020 | 0.082 | 12,352 |
+
+With this six-marker signature and IMC scaling, the Treg class agrees poorly with the published labels: about half of its cells are published as epithelial. The signature was not retuned against the published labels. Treg-based results are always shown with the published-label refit beside them.
+
+![Marker expression by CELESTA class](figures/genotype_marker_heatmap.png)
+
+![Example cores per subtype](figures/genotype_example_cores.png)
+
+*One core per PAM50 subtype, chosen as the core closest to the subtype's median composition, coloured by official CELESTA class.*
+
+### IV.3 Hypotheses and positive controls
+
+| ID | Test | Estimate | p | n | Outcome |
+|---|---|---|---|---|---|
+| H1 | METABRIC Tumour -> CD8 T cell, k = 20, Basal - LumA (adjusted) | -0.047 [-0.157, 0.064] | 0.406 | 368 | fail |
+| H1-rev | METABRIC CD8 T cell -> Tumour, k = 20, Basal - LumA (adjusted) | -0.040 [-0.146, 0.066] | 0.458 | 368 | fail |
+| H2 | METABRIC ER+, Tumour -> Macrophage, k = 20, TP53 mutant - wild-type (adjusted) | -0.005 [-0.065, 0.054] | 0.857 | 341 | fail |
+| H3 | METABRIC round-1 contrasts with q < 0.05 (9) with the same sign in Basel | 9.000 | – | 9 | pass |
+| H3-strict | share of replicated signs > 0.5 (one-sided binomial; needs >= 5 discoveries) | 1.000 | 0.002 | 9 | pass |
+| P1 | METABRIC immune fraction: Basal - LumA and Her2 - LumA | 0.105 [0.033, 0.178] | 0.005 | 436 | fail |
+| P2a | Tumour -> Tumour and Stroma -> Stroma, Basal - LumA > 0 | – | – | – | fail |
+| P2b | B -> T and T -> B (round-1), Basal - LumA > 0 | – | – | – | pass |
+| P2c | Treg -> CD8 T and Treg -> CD4 T, Basal - LumA > 0 (CELESTA) | – | – | – | fail |
+| d | METABRIC Tumour -> Treg, k = 20, node-positive - node-negative (adjusted, CELESTA) | -0.006 [-0.069, 0.056] | 0.846 | 386 | fail |
+| P2 | at least 2 of P2a-c pass | 1.000 | – | – | fail |
+
+- **H1 fails.** H1 predicted that Basal tumours show more CD8 T–tumour co-localisation than LumA. The estimate is slightly negative at every k, adjusted or not (forest plot below).
+- **H2 fails.** H2 predicted that TP53 mutation raises macrophage–tumour co-localisation in ER⁺ tumours.
+- **H3 passes as pre-registered, but read it narrowly.** The 9 METABRIC discoveries are 3 ordered pairs at 3 values of k, so they are not independent. Macrophage↔Endothelial replicates in Basel. Macrophage→Tumour has the same sign but is about 0 in Basel (IV.5).
+- **(d) is not supported with this pipeline's labels.** Question (d) asks whether tumour–Treg co-localisation is higher in node-positive tumours. With the published Treg class the estimate points the way Zhang et al. found in head-and-neck cancer, but it is not significant after adjustment, in only 88 patients.
+
+**P1, immune fraction (a composition measure):**
+
+| Cohort | Labels | Contrast | Immune-fraction difference | p | n |
+|---|---|---|---|---|---|
+| METABRIC | CELESTA | LumB | 0.045 [-0.004, 0.094] | 0.069 | 436 |
+| METABRIC | CELESTA | Her2 | 0.040 [-0.027, 0.108] | 0.242 | 436 |
+| METABRIC | CELESTA | Basal | 0.105 [0.033, 0.178] | 0.005 | 436 |
+| METABRIC | CELESTA | claudin-low | 0.120 [0.064, 0.177] | 3.8e-05 | 436 |
+| METABRIC | published | LumB | 0.011 [-0.030, 0.052] | 0.599 | 463 |
+| METABRIC | published | Her2 | 0.075 [0.019, 0.131] | 0.009 | 463 |
+| METABRIC | published | Basal | 0.088 [0.026, 0.149] | 0.005 | 463 |
+| METABRIC | published | claudin-low | 0.110 [0.063, 0.158] | 5.7e-06 | 463 |
+| Basel | CELESTA | HER2+ | 0.029 [-0.027, 0.085] | 0.308 | 260 |
+| Basel | CELESTA | TN | 0.114 [0.054, 0.175] | 2.3e-04 | 260 |
+
+- **Reproduced:** Basal > LumA in METABRIC and TN > ER⁺/HER2⁻ in Basel, as Ali 2020, Denkert 2018 and Jackson 2020 report.
+- **Verdict:** P1 fails by the pre-registered rule; the HER2-enriched contrast is reproduced with the published labels (+0.075) but not with this pipeline's labels (+0.040, CI includes 0), so it depends on the cell typing.
+
+**P2, subtype-specific interactions reported by Ali 2020 and Danenberg 2022:**
+
+| Control | Pair | Basal - LumA | p | n |
+|---|---|---|---|---|
+| P2a | Tumour -> Tumour | -0.260 [-0.879, 0.359] | 0.410 | 430 |
+| P2a | Stroma -> Stroma | 0.329 [-0.268, 0.925] | 0.279 | 433 |
+| P2b | B cell -> T cell | 0.122 [-0.313, 0.558] | 0.581 | 346 |
+| P2b | T cell -> B cell | 0.059 [-0.395, 0.513] | 0.798 | 346 |
+| P2c | Treg -> CD8 T cell | -0.036 [-0.482, 0.409] | 0.873 | 353 |
+| P2c | Treg -> CD4 T cell | -0.051 [-0.603, 0.500] | 0.854 | 346 |
+| P2c (published labels) | Treg -> CD8 T cell | 0.438 [-1.606, 2.483] | 0.670 |  85 |
+| P2c (published labels) | Treg -> CD4 T cell | -0.352 [-0.934, 0.230] | 0.231 |  78 |
+
+- **P2a, Ali's "separation phenotype":** not reproduced.
+- **P2c, Danenberg's suppressed expansion:** not reproduced.
+- **P2b, TLS-like B–T co-localisation:** in the predicted direction only, with wide intervals.
+- **P2 fails overall.**
+- **The translation is approximate.** These prior results come from touching-cell permutation tests (Ali) and TME-structure enrichment (Danenberg) on 32–57 clustered phenotypes. Mapping them onto six- to nine-class kNN CLQs loses detail.
+- **P3 (BRCA1)** is descriptive only. Only 4–6 BRCA1-mutant patients have a defined Treg pair (`results/genotype/tables.md`).
+
+![Effect sizes for H1–H3](figures/genotype_forest.png)
+
+### IV.4 Arrangement beyond amount: omnibus tests
+
+This section is the first of the two test families. For every ordered pair of the nine CELESTA classes and every k, a PAM50 F-test asks whether any subtype differs, with BH across the 243 tests. Q2 uses the same pairs and k for TP53 and PIK3CA. The second family, the pre-specified Basal/HER2-enriched − LumA contrasts, is in IV.5.
+
+
+| Question | Adjusted | Tests | q < 0.05 | p < 0.05 |
+|---|---|---|---|---|
+| Q1 subtype, omnibus F-test (9 classes) | composition-adjusted | 243 | 0 | 24 |
+| Q1 subtype, omnibus F-test (9 classes) | unadjusted | 243 | 7 | 42 |
+| Q2 TP53 | composition-adjusted | 243 | 0 | 33 |
+| Q2 TP53 | unadjusted | 243 | 0 | 39 |
+| Q2 PIK3CA | composition-adjusted | 243 | 0 | 10 |
+| Q2 PIK3CA | unadjusted | 243 | 0 | 27 |
+
+- **Subtype:** the 7 unadjusted omnibus discoveries are B, macrophage and endothelial cells around tumour cells. None survives adjustment for CLR composition. The closest is Macrophage→Tumour, with adjusted p = 0.003 and q = 0.11. Its pre-specified Basal − LumA contrast does reach q < 0.05 (IV.5).
+- **Mutations:** no TP53 or PIK3CA association survives FDR control.
+- **Strongest TP53 lead (exploratory, not FDR-significant):** fewer tumour cells around CD8 T cells in TP53-mutant tumours, consistent at all three k:
+
+| Pair | k | TP53 mut - wt | p | q | n | n mutant |
+|---|---|---|---|---|---|---|
+| CD8 T cell -> Tumour | 40 | -0.091 [-0.150, -0.032] | 0.003 | 0.267 | 380 | 142 |
+| CD8 T cell -> Tumour | 20 | -0.093 [-0.155, -0.031] | 0.003 | 0.267 | 380 | 142 |
+| CD8 T cell -> Tumour | 10 | -0.091 [-0.155, -0.028] | 0.005 | 0.267 | 380 | 142 |
+| Macrophage -> Tumour | 20 | -0.066 [-0.113, -0.020] | 0.005 | 0.267 | 439 | 155 |
+| Macrophage -> Tumour | 40 | -0.061 [-0.104, -0.018] | 0.005 | 0.267 | 439 | 155 |
+| Endothelial -> Tumour | 40 | -0.062 [-0.108, -0.016] | 0.009 | 0.309 | 441 | 156 |
+| Macrophage -> Endothelial | 40 | 0.125 [0.031, 0.220] | 0.010 | 0.309 | 443 | 159 |
+| Tumour -> CD8 T cell | 20 | -0.085 [-0.150, -0.020] | 0.010 | 0.309 | 380 | 142 |
+
+![Subtype-by-pair CLQ heatmap](figures/genotype_heatmap.png)
+
+*Mean patient CLQ (log2) by PAM50 subtype for every ordered pair at k = 20. No pair carries a significance mark: no omnibus test reached q < 0.05 after adjustment.*
+
+**Robustness:**
+
+| Check | Value |
+|---|---|
+| Subtype-label permutation: share of 1,000 permutations with any BH discovery | 0.039 |
+| Subtype-label permutation: mean null p-value | 0.503 |
+| Permutation check calibrated (pre-registered rule) | yes |
+| Q1 discoveries significant (p < 0.05) at both other k | no discoveries |
+| Published labels, k = 20: Spearman correlation of subtype F across pairs | 0.184 |
+| Published labels: Basal - LumA sign agreement (pairs defined in both) | 0.765 |
+| Published labels: CELESTA k = 20 discoveries with published q < 0.05 | 0 of 0 |
+| Lab convention (Unknown cells kept in graph), k = 20: Spearman correlation of F | 0.741 |
+| Lab convention: CELESTA k = 20 discoveries also q < 0.05 | 0 of 0 |
+
+- **The permutation check is calibrated.** Under 1,000 subtype-label shuffles, 3.9% of runs produce any discovery, and the null p-values average 0.50.
+- **The published-label refit agrees only loosely** (F correlation 0.18; Basal − LumA sign agreement 0.77). The co-location results depend on the cell typing.
+- **The lab's own convention changes little.** Keeping Unknown cells in the neighbour graph gives an F correlation of 0.74 with the primary run.
+
+### IV.5 Replication in Basel: pre-specified contrasts
+
+This section is the second test family, the one used for H3. From the composition-adjusted model, it takes the Basal − LumA and HER2-enriched − LumA contrasts. These are fitted on the six classes shared with Basel (CELESTA round-1 labels, with T subsets merged into T cells) and their own six-class CLR. BH runs across 216 contrasts (36 pairs × 3 k × 2 contrasts). Every contrast with q < 0.05 was refitted in Basel against its receptor-based counterpart (TN or HER2⁺ vs ER⁺/HER2⁻). An omnibus F-test on these six classes also gives no discovery (0 of 108).
+
+
+| METABRIC Basal or Her2 - LumA contrasts tested (6 shared classes) | q < 0.05 | Refitted in Basel | Same sign | Same sign and Basel p < 0.05 |
+|---|---|---|---|---|
+| 216 | 9 | 9 | 9 | 4 |
+
+| Pair | k | METABRIC | METABRIC q | Basel | Basel p | Same sign |
+|---|---|---|---|---|---|---|
+| Endothelial -> Macrophage | 20 | Basal - LumA 0.428 [0.223, 0.632] | 0.010 | TN 0.178 [0.027, 0.328] | 0.021 | yes |
+| Macrophage -> Endothelial | 10 | Basal - LumA 0.417 [0.201, 0.633] | 0.014 | TN 0.106 [-0.048, 0.260] | 0.175 | yes |
+| Endothelial -> Macrophage | 10 | Basal - LumA 0.452 [0.207, 0.696] | 0.014 | TN 0.158 [0.008, 0.307] | 0.039 | yes |
+| Macrophage -> Endothelial | 20 | Basal - LumA 0.362 [0.169, 0.555] | 0.014 | TN 0.125 [-0.028, 0.278] | 0.110 | yes |
+| Endothelial -> Macrophage | 40 | Basal - LumA 0.325 [0.155, 0.494] | 0.014 | TN 0.168 [0.031, 0.306] | 0.017 | yes |
+| Macrophage -> Endothelial | 40 | Basal - LumA 0.286 [0.129, 0.442] | 0.014 | TN 0.149 [0.009, 0.288] | 0.037 | yes |
+| Macrophage -> Tumour | 10 | Basal - LumA -0.141 [-0.220, -0.062] | 0.015 | TN -0.008 [-0.077, 0.061] | 0.812 | yes |
+| Macrophage -> Tumour | 20 | Basal - LumA -0.136 [-0.212, -0.059] | 0.015 | TN -0.008 [-0.081, 0.066] | 0.838 | yes |
+| Macrophage -> Tumour | 40 | Basal - LumA -0.116 [-0.187, -0.045] | 0.033 | TN -0.010 [-0.082, 0.063] | 0.795 | yes |
+
+![METABRIC vs Basel replication](figures/genotype_replication.png)
+
+*Every METABRIC Basal − LumA and HER2-enriched − LumA contrast against its Basel TN and HER2⁺ counterpart, using the six classes both cohorts share. Red points are the METABRIC discoveries.*
+
+- **Replicated:** macrophage–endothelial co-localisation is higher in basal-like and triple-negative tumours in both cohorts.
+- **Not replicated:** the METABRIC finding of fewer macrophages around tumour cells in basal-like tumours is flat in Basel.
+
+### IV.6 Agreement with prior work
+
+The comparison table and the list of new results are in [What it found, and how that compares with existing research](#what-it-found-and-how-that-compares-with-existing-research) at the top of this README.
+
+### IV.7 Deviations from the plan
+
+1. **kNN instead of radii.** The lab's CLQ code supports k nearest neighbours only, so k = 10/20/40 replace 20/40/80 µm. "Leave-one-radius-out" became leave-one-k-out.
+2. **Permutations at k = 20 only.** The first run, with permutations at all k, exhausted memory and was lost (AMBIGUITIES S2.1). The association models use observed CLQs, which are computed at every k.
+3. **Statistics and figures in R, not Python.** Part IV's statistics and figures are in R, alongside the upstream R packages; Python is kept where existing repo code did the job.
+4. **No T subsets in Basel.** Its panel has no CD4, CD8 or FOXP3, so replication uses the six shared classes.
+5. **Danenberg's public R code was not run.** It works on their own TME-structure assignments, not on our classes. Ali 2020's analysis code is not public.
+6. **H3 counts dependent contrasts,** so it is reported as one replicated arrangement (IV.5).
+
+### IV.8 Limitations
+
+- **Small sample of each tumour.** There is one small TMA core per patient (rarely two), so co-location describes only a few hundred µm of each tumour.
+- **Targeted mutation panel.** Mutations come from the 173-gene METABRIC panel. BRCA1 (6 mutant patients) and TP53 within basal tumours (2 wild-type) cannot be tested.
+- **Cross-sectional design.** The results are associations: nothing here is causal or prognostic.
+- **Scaling choice.** The IMC scaling determines the CELESTA expression probabilities. It was fixed by a pre-declared rule, but other reasonable choices would give somewhat different labels.
+- **Cell classes.** The shared marker panel is small. With this six-marker signature and IMC scaling, the Treg class agrees poorly with the published labels (about half of its cells are published as epithelial).
+
+Memo: [docs/GENOTYPE_MEMO.md](docs/GENOTYPE_MEMO.md).
+
+Reproduce:
+
+```bash
+Rscript scripts/setup_r.R                                  # pin CELESTA + lab CLQ code; results/genotype/environment.json
+uv run python scripts/download_data.py --genomics --basel-expression   # cBioPortal mutations; Basel intensities (~0.6 GB)
+uv run python scripts/run_genotype_spatial.py              # cohort tables (Python loaders)
+Rscript scripts/celesta_example.R                          # bundled CELESTA example vs. its reference output
+Rscript scripts/celesta_scaling.R                          # scaling choice on 20 seeded images per cohort
+for c in metabric basel; do Rscript scripts/celesta_official.R --cells data/processed/genotype/${c}_cells.csv.gz \
+  --signature results/genotype/signature_${c}.csv --thresholds results/genotype/thresholds_${c}.csv \
+  --out results/genotype/cell_labels_${c}.csv.gz --cofactor 1 --norm p99 --workers 18 \
+  --status-out results/genotype/celesta_status_${c}.csv; done
+Rscript scripts/celesta_report.R
+# CLQ: the six clq_official.R runs listed in AMBIGUITIES_GENOTYPE.md S2.2 (about 1.7 h on 18 cores)
+Rscript scripts/clq_features.R
+Rscript scripts/genotype_models.R                          # (--dry-run: all labels shuffled)
+Rscript scripts/genotype_report.R                          # results/genotype/tables.md + figures
+```
+
+---
+
+## Parts I–III: do spatial features add prognostic value?
+
+The earlier parts of this repository asked a different question about the same cohorts: survival.
 
 A methods note on two imaging mass cytometry (IMC) breast cancer cohorts: Basel (Jackson et al. 2020, *Nature*) and METABRIC (Danenberg et al. 2022, *Nature Genetics*). The analysis asks whether per-patient cell-type composition, and then spatial-interaction features, improve out-of-fold survival prediction **beyond standard clinical variables**.
 - **Part I:** discovery in Basel.
 - **Part II:** a pre-registered external replication in METABRIC.
 - **Part III:** re-typing the METABRIC cells with **CELESTA-Lite**, a Python port of the CELESTA spatial cell-typing engine, to see whether better-informed cell labels change the answer.
-- **Part IV:** a separate, descriptive question. Using the official CELESTA R package and the Plevritis lab's co-location quotient (CLQ) code, do tumour subtype and genotype shape spatial organisation beyond cell composition? No survival outcomes are involved. See [Part IV](#part-iv-tumour-genotype-and-spatial-organisation).
+- **Part IV:** the subtype and genotype question at the top of this README (no survival outcomes).
 
 CPU only. Each part reruns from one command.
 
@@ -46,8 +391,6 @@ CPU only. Each part reruns from one command.
 - A test that every table row in this README is reproduced verbatim from saved results.
 
 Deviations are listed in §7 (part I), in [ANALYSIS_PLAN.md](ANALYSIS_PLAN.md) amendments (part II), and in §IV.7 and [AMBIGUITIES_GENOTYPE.md](AMBIGUITIES_GENOTYPE.md) (part IV).
-
----
 
 ## 1. Question and relation to prior work
 
@@ -509,287 +852,6 @@ It is independent of, and not endorsed by, the original authors.
 - **Downstream effect.** Spatial features computed from CELESTA-Lite labels correlate with the published-label features at ρ = 0.82–0.84 for tumor-centred summaries but only 0.18–0.44 for T-cell pairs (`results/part2/tables.md`). The METABRIC model built on them (pre-registered in Amendment 3) adds nothing (§P2.2). Better-informed cell labels did not uncover prognostic spatial signal.
 
 Reproduce: `uv run python scripts/run_celesta_metabric.py`, which writes `results/celesta/{v1,v2,v1_reference_ep}/`.
-
-## Part IV: tumour genotype and spatial organisation
-
-Parts I–III asked whether spatial features predict survival. Part IV asks a different, descriptive question and makes no prognostic claim:
-- **Q1:** Do breast cancer subtypes (PAM50, plus claudin-low) differ in how their cells are arranged, beyond how many cells of each type they contain?
-- **Q2:** Is TP53 (and, secondarily, PIK3CA) mutation associated with a distinct arrangement within subtype?
-- **Q3:** Do METABRIC's subtype differences replicate in Basel with receptor-based surrogate subtypes?
-
-**Short answer.**
-- **Subtype and arrangement (Q1).** Two pre-specified test families, both composition-adjusted, answer this:
-  - **Omnibus subtype tests** (does any PAM50 subtype differ? one F-test per ordered pair and k, nine CELESTA classes; IV.4). None survives FDR control after composition adjustment (0 of 243), against 7 without it. The subtype differences in co-location seen here are largely differences in composition.
-  - **Pre-specified Basal − LumA and HER2-enriched − LumA contrasts** (six classes shared with Basel; the H3 replication family; IV.5). Three ordered pairs reached q < 0.05 at all three k, all Basal − LumA: macrophage → endothelial and endothelial → macrophage (higher in Basal) and macrophage → tumour (lower).
-  - **Why the two differ.** A single pre-specified contrast is a sharper test than a four-subtype omnibus F-test, and the two families have different sizes. For macrophage → tumour, the Basal − LumA estimate is nearly the same in both label sets: the omnibus test gives q = 0.11 and the contrast q = 0.015.
-- **Hypotheses:** H1, H2 and Zhang et al.'s node-status question (d) were not supported.
-- **Replication:** of the three contrast discoveries, macrophage–endothelial co-localisation replicated in Basel: it is higher in basal-like (METABRIC) and triple-negative (Basel) tumours. Macrophage → tumour did not replicate.
-- **Positive controls:** only partly reproduced. The nulls mean "not detected with this pipeline and sample", not "absent".
-
-### IV.1 Approach
-
-**Cell typing.** This part applies CELESTA (Zhang et al., *Nature Methods* 2022) as the cell-typing engine. It uses the authors' R package unmodified (plevritis-lab/CELESTA @ `e5e92ff`), not the Python port of Part III.
-- **Markers.** The signature uses the lineage markers present in both panels: panCK, CD3, CD20, CD68, CD31-vWF and SMA.
-- **Classes.** Round 1 gives Tumour, T, B, macrophage, endothelial and stroma. In METABRIC only, round 2 splits T cells into CD8 T, CD4 T and Treg; Basel has no CD4, CD8 or FOXP3.
-- **Why the input is rescaled.** IMC counts were rescaled before input so that marker intensities span the range the package's expression-probability step expects; the rule was fixed in advance (AMBIGUITIES_GENOTYPE.md). The transform is arcsinh(x/1), with each channel divided by its cohort 99th percentile × 10.
-- **How the scaling was chosen.** On 20 seeded images per cohort, by a rule fixed in advance that uses only assignment rate, filtered fraction and class presence.
-- **Thresholds.** Package defaults.
-
-**Co-location.** The Plevritis lab's own CLQ code was used (plevritis-lab/Spatial_Permutation_and_Normalization @ `02b6da5`, the "colocatome" code), with its functions evaluated unmodified.
-- **Formula.** CLQ_{b→a} = (C_{b→a}/N_a)/(N_b/(N−1)), where C counts type-b cells among the k nearest neighbours of type-a cells.
-- **Scale.** The lab's implementation counts neighbours rather than fractions, so its CLQ is k × the textbook value. We report CLQ/k, for which 1 means random.
-- **Neighbourhoods.** The lab code uses k nearest neighbours only, so k = 20 (the lab default), 10 and 40 replace the planned 20/40/80 µm radii.
-- **Permutations.** 500 within-image label permutations at k = 20 give per-image significance and confirm the null is centred on 1.
-
-**Models.** Patient-level linear models:
-
-    CLQ ~ group + CLR composition + log typed cells + age + grade
-
-- Benjamini–Hochberg is applied within each pre-specified family: the omnibus subtype F-tests (243), TP53 (243), PIK3CA (243) and the Basal/HER2-enriched − LumA replication contrasts (216).
-- Hypotheses, numeric predictions and pass rules were committed before any label was linked (`HYPOTHESES_GENOTYPE.md`, commit `e6e9389`), together with what prior work predicts (`PRIOR_EXPECTATIONS.md`).
-- Every choice that the plan or the packages left open is in `AMBIGUITIES_GENOTYPE.md`, including a table of which code (original or new) ran each step.
-
-**Data.**
-- **METABRIC:** 749 invasive-tumour images and 693 patients.
-  - 588 patients link to cBioPortal subtype or sequencing (METABRIC_173 panel).
-  - PAM50: LumA 208, LumB 152, claudin-low 88, HER2-enriched 55, Basal 42.
-- **Basel:** 288 images and 280 patients, with per-cell intensities streamed from the Zenodo archive.
-  - Surrogate subtypes: ER⁺/HER2⁻ 179, HER2⁺ 52, TN 47.
-
-### IV.2 Cell typing
-
-| Cohort | Class | Defining marker | Images with marker | Images assigned | Share |
-|---|---|---|---|---|---|
-| metabric | Tumour | panCK | 709 | 707 | 0.997 |
-| metabric | T cell | CD3 | 725 | 696 | 0.960 |
-| metabric | B cell | CD20 | 710 | 695 | 0.979 |
-| metabric | Macrophage | CD68 | 737 | 737 | 1.000 |
-| metabric | Endothelial | CD31-vWF | 746 | 746 | 1.000 |
-| metabric | Stroma | SMA | 745 | 744 | 0.999 |
-| metabric | CD8 T cell | CD8 | 728 | 718 | 0.986 |
-| metabric | CD4 T cell | CD4 | 729 | 712 | 0.977 |
-| metabric | Treg | FOXP3 | 742 | 720 | 0.970 |
-| basel | Tumour | panCK | 277 | 277 | 1.000 |
-| basel | T cell | CD3 | 287 | 287 | 1.000 |
-| basel | B cell | CD20 | 286 | 286 | 1.000 |
-| basel | Macrophage | CD68 | 285 | 285 | 1.000 |
-| basel | Endothelial | CD31-vWF | 287 | 287 | 1.000 |
-| basel | Stroma | SMA | 286 | 286 | 1.000 |
-
-- **Acceptance:** every class is assigned in ≥ 96% of the images where its defining marker is present (at least 5 cells above the package's own GMM crossing point). The acceptance bar was 80%.
-- **Concordance with the published labels:** reported as concordance only, without judging either labelling. At the round-1 level it is 0.73 in both cohorts (κ 0.55 and 0.57).
-- **The METABRIC T-cell subclasses agree much less:**
-
-| CELESTA class | Published class | CELESTA cells | Published cells | Share of CELESTA in published | Share of published recovered | CELESTA cells published as epithelial |
-|---|---|---|---|---|---|---|
-| CD8 T cell | CD8+ T cells | 33,005 | 34,588 | 0.492 | 0.469 | 8,393 |
-| CD4 T cell | CD4+ T cells | 27,581 | 15,647 | 0.149 | 0.263 | 8,412 |
-| Treg | TReg & TEx | 25,432 | 6,318 | 0.020 | 0.082 | 12,352 |
-
-With this six-marker signature and IMC scaling, the Treg class agrees poorly with the published labels: about half of its cells are published as epithelial. The signature was not retuned against the published labels. Treg-based results are always shown with the published-label refit beside them.
-
-![Marker expression by CELESTA class](figures/genotype_marker_heatmap.png)
-
-![Example cores per subtype](figures/genotype_example_cores.png)
-
-*One core per PAM50 subtype, chosen as the core closest to the subtype's median composition, coloured by official CELESTA class.*
-
-### IV.3 Hypotheses and positive controls
-
-| ID | Test | Estimate | p | n | Outcome |
-|---|---|---|---|---|---|
-| H1 | METABRIC Tumour -> CD8 T cell, k = 20, Basal - LumA (adjusted) | -0.047 [-0.157, 0.064] | 0.406 | 368 | fail |
-| H1-rev | METABRIC CD8 T cell -> Tumour, k = 20, Basal - LumA (adjusted) | -0.040 [-0.146, 0.066] | 0.458 | 368 | fail |
-| H2 | METABRIC ER+, Tumour -> Macrophage, k = 20, TP53 mutant - wild-type (adjusted) | -0.005 [-0.065, 0.054] | 0.857 | 341 | fail |
-| H3 | METABRIC round-1 contrasts with q < 0.05 (9) with the same sign in Basel | 9.000 | – | 9 | pass |
-| H3-strict | share of replicated signs > 0.5 (one-sided binomial; needs >= 5 discoveries) | 1.000 | 0.002 | 9 | pass |
-| P1 | METABRIC immune fraction: Basal - LumA and Her2 - LumA | 0.105 [0.033, 0.178] | 0.005 | 436 | fail |
-| P2a | Tumour -> Tumour and Stroma -> Stroma, Basal - LumA > 0 | – | – | – | fail |
-| P2b | B -> T and T -> B (round-1), Basal - LumA > 0 | – | – | – | pass |
-| P2c | Treg -> CD8 T and Treg -> CD4 T, Basal - LumA > 0 (CELESTA) | – | – | – | fail |
-| d | METABRIC Tumour -> Treg, k = 20, node-positive - node-negative (adjusted, CELESTA) | -0.006 [-0.069, 0.056] | 0.846 | 386 | fail |
-| P2 | at least 2 of P2a-c pass | 1.000 | – | – | fail |
-
-- **H1 fails.** H1 predicted that Basal tumours show more CD8 T–tumour co-localisation than LumA. The estimate is slightly negative at every k, adjusted or not (forest plot below).
-- **H2 fails.** H2 predicted that TP53 mutation raises macrophage–tumour co-localisation in ER⁺ tumours.
-- **H3 passes as pre-registered, but read it narrowly.** The 9 METABRIC discoveries are 3 ordered pairs at 3 values of k, so they are not independent. Macrophage↔Endothelial replicates in Basel. Macrophage→Tumour has the same sign but is about 0 in Basel (IV.5).
-- **(d) is not supported with this pipeline's labels.** Question (d) asks whether tumour–Treg co-localisation is higher in node-positive tumours. With the published Treg class the estimate points the way Zhang et al. found in head-and-neck cancer, but it is not significant after adjustment, in only 88 patients.
-
-**P1, immune fraction (a composition measure):**
-
-| Cohort | Labels | Contrast | Immune-fraction difference | p | n |
-|---|---|---|---|---|---|
-| METABRIC | CELESTA | LumB | 0.045 [-0.004, 0.094] | 0.069 | 436 |
-| METABRIC | CELESTA | Her2 | 0.040 [-0.027, 0.108] | 0.242 | 436 |
-| METABRIC | CELESTA | Basal | 0.105 [0.033, 0.178] | 0.005 | 436 |
-| METABRIC | CELESTA | claudin-low | 0.120 [0.064, 0.177] | 3.8e-05 | 436 |
-| METABRIC | published | LumB | 0.011 [-0.030, 0.052] | 0.599 | 463 |
-| METABRIC | published | Her2 | 0.075 [0.019, 0.131] | 0.009 | 463 |
-| METABRIC | published | Basal | 0.088 [0.026, 0.149] | 0.005 | 463 |
-| METABRIC | published | claudin-low | 0.110 [0.063, 0.158] | 5.7e-06 | 463 |
-| Basel | CELESTA | HER2+ | 0.029 [-0.027, 0.085] | 0.308 | 260 |
-| Basel | CELESTA | TN | 0.114 [0.054, 0.175] | 2.3e-04 | 260 |
-
-- **Reproduced:** Basal > LumA in METABRIC and TN > ER⁺/HER2⁻ in Basel, as Ali 2020, Denkert 2018 and Jackson 2020 report.
-- **Verdict:** P1 fails by the pre-registered rule; the HER2-enriched contrast is reproduced with the published labels (+0.075) but not with this pipeline's labels (+0.040, CI includes 0), so it depends on the cell typing.
-
-**P2, subtype-specific interactions reported by Ali 2020 and Danenberg 2022:**
-
-| Control | Pair | Basal - LumA | p | n |
-|---|---|---|---|---|
-| P2a | Tumour -> Tumour | -0.260 [-0.879, 0.359] | 0.410 | 430 |
-| P2a | Stroma -> Stroma | 0.329 [-0.268, 0.925] | 0.279 | 433 |
-| P2b | B cell -> T cell | 0.122 [-0.313, 0.558] | 0.581 | 346 |
-| P2b | T cell -> B cell | 0.059 [-0.395, 0.513] | 0.798 | 346 |
-| P2c | Treg -> CD8 T cell | -0.036 [-0.482, 0.409] | 0.873 | 353 |
-| P2c | Treg -> CD4 T cell | -0.051 [-0.603, 0.500] | 0.854 | 346 |
-| P2c (published labels) | Treg -> CD8 T cell | 0.438 [-1.606, 2.483] | 0.670 |  85 |
-| P2c (published labels) | Treg -> CD4 T cell | -0.352 [-0.934, 0.230] | 0.231 |  78 |
-
-- **P2a, Ali's "separation phenotype":** not reproduced.
-- **P2c, Danenberg's suppressed expansion:** not reproduced.
-- **P2b, TLS-like B–T co-localisation:** in the predicted direction only, with wide intervals.
-- **P2 fails overall.**
-- **The translation is approximate.** These prior results come from touching-cell permutation tests (Ali) and TME-structure enrichment (Danenberg) on 32–57 clustered phenotypes. Mapping them onto six- to nine-class kNN CLQs loses detail.
-- **P3 (BRCA1)** is descriptive only. Only 4–6 BRCA1-mutant patients have a defined Treg pair (`results/genotype/tables.md`).
-
-![Effect sizes for H1–H3](figures/genotype_forest.png)
-
-### IV.4 Arrangement beyond amount: omnibus tests
-
-This section is the first of the two test families. For every ordered pair of the nine CELESTA classes and every k, a PAM50 F-test asks whether any subtype differs, with BH across the 243 tests. Q2 uses the same pairs and k for TP53 and PIK3CA. The second family, the pre-specified Basal/HER2-enriched − LumA contrasts, is in IV.5.
-
-
-| Question | Adjusted | Tests | q < 0.05 | p < 0.05 |
-|---|---|---|---|---|
-| Q1 subtype, omnibus F-test (9 classes) | composition-adjusted | 243 | 0 | 24 |
-| Q1 subtype, omnibus F-test (9 classes) | unadjusted | 243 | 7 | 42 |
-| Q2 TP53 | composition-adjusted | 243 | 0 | 33 |
-| Q2 TP53 | unadjusted | 243 | 0 | 39 |
-| Q2 PIK3CA | composition-adjusted | 243 | 0 | 10 |
-| Q2 PIK3CA | unadjusted | 243 | 0 | 27 |
-
-- **Subtype:** the 7 unadjusted omnibus discoveries are B, macrophage and endothelial cells around tumour cells. None survives adjustment for CLR composition. The closest is Macrophage→Tumour, with adjusted p = 0.003 and q = 0.11. Its pre-specified Basal − LumA contrast does reach q < 0.05 (IV.5).
-- **Mutations:** no TP53 or PIK3CA association survives FDR control.
-- **Strongest TP53 lead (exploratory, not FDR-significant):** fewer tumour cells around CD8 T cells in TP53-mutant tumours, consistent at all three k:
-
-| Pair | k | TP53 mut - wt | p | q | n | n mutant |
-|---|---|---|---|---|---|---|
-| CD8 T cell -> Tumour | 40 | -0.091 [-0.150, -0.032] | 0.003 | 0.267 | 380 | 142 |
-| CD8 T cell -> Tumour | 20 | -0.093 [-0.155, -0.031] | 0.003 | 0.267 | 380 | 142 |
-| CD8 T cell -> Tumour | 10 | -0.091 [-0.155, -0.028] | 0.005 | 0.267 | 380 | 142 |
-| Macrophage -> Tumour | 20 | -0.066 [-0.113, -0.020] | 0.005 | 0.267 | 439 | 155 |
-| Macrophage -> Tumour | 40 | -0.061 [-0.104, -0.018] | 0.005 | 0.267 | 439 | 155 |
-| Endothelial -> Tumour | 40 | -0.062 [-0.108, -0.016] | 0.009 | 0.309 | 441 | 156 |
-| Macrophage -> Endothelial | 40 | 0.125 [0.031, 0.220] | 0.010 | 0.309 | 443 | 159 |
-| Tumour -> CD8 T cell | 20 | -0.085 [-0.150, -0.020] | 0.010 | 0.309 | 380 | 142 |
-
-![Subtype-by-pair CLQ heatmap](figures/genotype_heatmap.png)
-
-*Mean patient CLQ (log2) by PAM50 subtype for every ordered pair at k = 20. No pair carries a significance mark: no omnibus test reached q < 0.05 after adjustment.*
-
-**Robustness:**
-
-| Check | Value |
-|---|---|
-| Subtype-label permutation: share of 1,000 permutations with any BH discovery | 0.039 |
-| Subtype-label permutation: mean null p-value | 0.503 |
-| Permutation check calibrated (pre-registered rule) | yes |
-| Q1 discoveries significant (p < 0.05) at both other k | no discoveries |
-| Published labels, k = 20: Spearman correlation of subtype F across pairs | 0.184 |
-| Published labels: Basal - LumA sign agreement (pairs defined in both) | 0.765 |
-| Published labels: CELESTA k = 20 discoveries with published q < 0.05 | 0 of 0 |
-| Lab convention (Unknown cells kept in graph), k = 20: Spearman correlation of F | 0.741 |
-| Lab convention: CELESTA k = 20 discoveries also q < 0.05 | 0 of 0 |
-
-- **The permutation check is calibrated.** Under 1,000 subtype-label shuffles, 3.9% of runs produce any discovery, and the null p-values average 0.50.
-- **The published-label refit agrees only loosely** (F correlation 0.18; Basal − LumA sign agreement 0.77). The co-location results depend on the cell typing.
-- **The lab's own convention changes little.** Keeping Unknown cells in the neighbour graph gives an F correlation of 0.74 with the primary run.
-
-### IV.5 Replication in Basel: pre-specified contrasts
-
-This section is the second test family, the one used for H3. From the composition-adjusted model, it takes the Basal − LumA and HER2-enriched − LumA contrasts. These are fitted on the six classes shared with Basel (CELESTA round-1 labels, with T subsets merged into T cells) and their own six-class CLR. BH runs across 216 contrasts (36 pairs × 3 k × 2 contrasts). Every contrast with q < 0.05 was refitted in Basel against its receptor-based counterpart (TN or HER2⁺ vs ER⁺/HER2⁻). An omnibus F-test on these six classes also gives no discovery (0 of 108).
-
-
-| METABRIC Basal or Her2 - LumA contrasts tested (6 shared classes) | q < 0.05 | Refitted in Basel | Same sign | Same sign and Basel p < 0.05 |
-|---|---|---|---|---|
-| 216 | 9 | 9 | 9 | 4 |
-
-| Pair | k | METABRIC | METABRIC q | Basel | Basel p | Same sign |
-|---|---|---|---|---|---|---|
-| Endothelial -> Macrophage | 20 | Basal - LumA 0.428 [0.223, 0.632] | 0.010 | TN 0.178 [0.027, 0.328] | 0.021 | yes |
-| Macrophage -> Endothelial | 10 | Basal - LumA 0.417 [0.201, 0.633] | 0.014 | TN 0.106 [-0.048, 0.260] | 0.175 | yes |
-| Endothelial -> Macrophage | 10 | Basal - LumA 0.452 [0.207, 0.696] | 0.014 | TN 0.158 [0.008, 0.307] | 0.039 | yes |
-| Macrophage -> Endothelial | 20 | Basal - LumA 0.362 [0.169, 0.555] | 0.014 | TN 0.125 [-0.028, 0.278] | 0.110 | yes |
-| Endothelial -> Macrophage | 40 | Basal - LumA 0.325 [0.155, 0.494] | 0.014 | TN 0.168 [0.031, 0.306] | 0.017 | yes |
-| Macrophage -> Endothelial | 40 | Basal - LumA 0.286 [0.129, 0.442] | 0.014 | TN 0.149 [0.009, 0.288] | 0.037 | yes |
-| Macrophage -> Tumour | 10 | Basal - LumA -0.141 [-0.220, -0.062] | 0.015 | TN -0.008 [-0.077, 0.061] | 0.812 | yes |
-| Macrophage -> Tumour | 20 | Basal - LumA -0.136 [-0.212, -0.059] | 0.015 | TN -0.008 [-0.081, 0.066] | 0.838 | yes |
-| Macrophage -> Tumour | 40 | Basal - LumA -0.116 [-0.187, -0.045] | 0.033 | TN -0.010 [-0.082, 0.063] | 0.795 | yes |
-
-![METABRIC vs Basel replication](figures/genotype_replication.png)
-
-*Every METABRIC Basal − LumA and HER2-enriched − LumA contrast against its Basel TN and HER2⁺ counterpart, using the six classes both cohorts share. Red points are the METABRIC discoveries.*
-
-- **Replicated:** macrophage–endothelial co-localisation is higher in basal-like and triple-negative tumours in both cohorts.
-- **Not replicated:** the METABRIC finding of fewer macrophages around tumour cells in basal-like tumours is flat in Basel.
-
-### IV.6 Agreement with prior work
-
-| Prior result | This analysis | Verdict |
-|---|---|---|
-| More immune cells in basal-like/TN (Ali 2020, Denkert 2018, Jackson 2020) | immune fraction Basal +0.105 (METABRIC), TN +0.114 (Basel) | agrees |
-| More immune cells in HER2-enriched (Denkert 2018) | +0.040 with CELESTA labels (p 0.242); +0.075 with published labels | partly agrees (depends on the cell typing) |
-| Immune cells excluded from the tumour mass (Jackson 2020) | median Tumour -> T and Tumour -> Macrophage CLQ 0.50-0.88 across subtypes and cohorts | agrees |
-| T cells sit near endothelium (Jackson 2020) | median T -> Endothelial CLQ 1.05-1.41 | agrees |
-| Homotypic 'separation phenotype' in basal-like (Ali 2020) | Basal - LumA: Tumour -> Tumour -0.260, Stroma -> Stroma +0.329 (both CIs include 0) | not reproduced |
-| TLS-like B-T structures in basal-like (Danenberg 2022) | Basal - LumA: B -> T +0.122, T -> B +0.059 (both CIs include 0) | not reproduced (same direction only) |
-| Treg-T 'suppressed expansion' in ER-negative/basal and BRCA1 (Danenberg 2022) | Basal - LumA: Treg -> CD8 T -0.036, Treg -> CD4 T -0.051; BRCA1-mutant patients with a defined pair: 4 | not reproduced / BRCA1 not testable |
-| Tumour-Treg co-localisation higher in node-positive disease (Zhang 2022, HNSCC) | CELESTA labels -0.006 (p 0.846); published labels +0.126 (p 0.118, n = 88) | not reproduced; no earlier breast-cancer test found |
-
-New beyond these papers:
-- Composition explains the subtype differences in co-location seen here (IV.4).
-- Macrophage–endothelial co-localisation is higher in basal-like/TN tumours, and this replicates across cohorts (IV.5).
-- TP53 within subtype has no FDR-significant arrangement effect.
-- We found no earlier breast-cancer test of the node-status question (d); here it is null.
-
-### IV.7 Deviations from the plan
-
-1. **kNN instead of radii.** The lab's CLQ code supports k nearest neighbours only, so k = 10/20/40 replace 20/40/80 µm. "Leave-one-radius-out" became leave-one-k-out.
-2. **Permutations at k = 20 only.** The first run, with permutations at all k, exhausted memory and was lost (AMBIGUITIES S2.1). The association models use observed CLQs, which are computed at every k.
-3. **Statistics and figures in R, not Python.** Part IV's statistics and figures are in R, alongside the upstream R packages; Python is kept where existing repo code did the job.
-4. **No T subsets in Basel.** Its panel has no CD4, CD8 or FOXP3, so replication uses the six shared classes.
-5. **Danenberg's public R code was not run.** It works on their own TME-structure assignments, not on our classes. Ali 2020's analysis code is not public.
-6. **H3 counts dependent contrasts,** so it is reported as one replicated arrangement (IV.5).
-
-### IV.8 Limitations
-
-- **Small sample of each tumour.** There is one small TMA core per patient (rarely two), so co-location describes only a few hundred µm of each tumour.
-- **Targeted mutation panel.** Mutations come from the 173-gene METABRIC panel. BRCA1 (6 mutant patients) and TP53 within basal tumours (2 wild-type) cannot be tested.
-- **Cross-sectional design.** The results are associations: nothing here is causal or prognostic.
-- **Scaling choice.** The IMC scaling determines the CELESTA expression probabilities. It was fixed by a pre-declared rule, but other reasonable choices would give somewhat different labels.
-- **Cell classes.** The shared marker panel is small. With this six-marker signature and IMC scaling, the Treg class agrees poorly with the published labels (about half of its cells are published as epithelial).
-
-Memo: [docs/GENOTYPE_MEMO.md](docs/GENOTYPE_MEMO.md).
-
-Reproduce:
-
-```bash
-Rscript scripts/setup_r.R                                  # pin CELESTA + lab CLQ code; results/genotype/environment.json
-uv run python scripts/download_data.py --genomics --basel-expression   # cBioPortal mutations; Basel intensities (~0.6 GB)
-uv run python scripts/run_genotype_spatial.py              # cohort tables (Python loaders)
-Rscript scripts/celesta_example.R                          # bundled CELESTA example vs. its reference output
-Rscript scripts/celesta_scaling.R                          # scaling choice on 20 seeded images per cohort
-for c in metabric basel; do Rscript scripts/celesta_official.R --cells data/processed/genotype/${c}_cells.csv.gz \
-  --signature results/genotype/signature_${c}.csv --thresholds results/genotype/thresholds_${c}.csv \
-  --out results/genotype/cell_labels_${c}.csv.gz --cofactor 1 --norm p99 --workers 18 \
-  --status-out results/genotype/celesta_status_${c}.csv; done
-Rscript scripts/celesta_report.R
-# CLQ: the six clq_official.R runs listed in AMBIGUITIES_GENOTYPE.md S2.2 (about 1.7 h on 18 cores)
-Rscript scripts/clq_features.R
-Rscript scripts/genotype_models.R                          # (--dry-run: all labels shuffled)
-Rscript scripts/genotype_report.R                          # results/genotype/tables.md + figures
-```
 
 ## 8. Reproduction
 
