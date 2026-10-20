@@ -1,6 +1,6 @@
 # Do spatial tumor-microenvironment features add prognostic value in breast cancer?
 
-> **Part IV** applies the official CELESTA package and the Plevritis lab's CLQ code to a new question: do breast cancer subtype and genotype shape spatial organisation beyond cell composition?
+> **Part IV** asks a separate, descriptive question: do breast cancer subtype and genotype shape spatial organisation beyond cell composition? It uses CELESTA cell typing and co-location quotients (CLQ).
 > → [Part IV](#part-iv-tumour-genotype-and-spatial-organisation) · [docs/GENOTYPE_MEMO.md](docs/GENOTYPE_MEMO.md)
 
 A methods note on two imaging mass cytometry (IMC) breast cancer cohorts: Basel (Jackson et al. 2020, *Nature*) and METABRIC (Danenberg et al. 2022, *Nature Genetics*). The analysis asks whether per-patient cell-type composition, and then spatial-interaction features, improve out-of-fold survival prediction **beyond standard clinical variables**.
