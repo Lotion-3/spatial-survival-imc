@@ -20,7 +20,8 @@
 # both: clq (lab scale) and clq_k = clq / k (classic scale, null mean 1). get_CLQ returns 0 when either
 # type has <= 5 cells; those pairs are set to NA here (as the lab's CLQ_normalization_by_sample does).
 #
-# Inputs (CSV): labels = cell_id, image, <label-col> (integer type number; 0 = Unknown, NA = filtered);
+# Inputs (CSV): labels = cell_id, image, <label-col> (integer type number, 0 = Unknown, NA = filtered;
+#   or class names, mapped to type numbers via --types, other names -> 0);
 #   cells = cell_id, image, X, Y; types = cell_type (row i = type number i).
 # Output (CSV, one row per image x k x ordered pair): image, k, cell_A, cell_B, n_A, n_B, n_typed, n_all,
 #   clq, clq_k, perm_mean, perm_sd, percentile (lab rule), significant (lab rule: percentile <= 0.05 or
@@ -146,6 +147,9 @@ main <- function() {
   cells <- fread(opt$cells, select = c("cell_id", "image", "X", "Y"), colClasses = list(character = "image"))
   d <- merge(cells, labels[, c("cell_id", "image", opt$label_col), with = FALSE], by = c("cell_id", "image"))
   setnames(d, opt$label_col, "lab")
+  if (is.character(d$lab)) {  # class names (e.g. published labels) -> type numbers; other names -> 0
+    d[, lab := match(lab, types, nomatch = 0L)]
+  }
   d[, lab := as.integer(lab)]
   ks <- as.integer(strsplit(opt$k, ",")[[1]])
   perms <- as.integer(opt$perms)

@@ -40,6 +40,11 @@ GENES = ["TP53", "PIK3CA", "BRCA1", "CASP8"]
 # cBioPortal mutationType values counted as a mutation (non-silent, protein-altering or splice).
 NON_SILENT = {"Missense_Mutation", "Nonsense_Mutation", "Frame_Shift_Del", "Frame_Shift_Ins", "In_Frame_Del",
               "In_Frame_Ins", "Splice_Site", "Splice_Region", "Translation_Start_Site", "Nonstop_Mutation"}
+# Published labels at the CELESTA class resolution (robustness: alternative cell typing). Non-T classes
+# follow the repo's PHENOTYPE_CLASS (part II, Amendment 1); T phenotypes are split where CELESTA splits.
+COARSE_NAME = {"Tumor": "Tumour", "T": "T cell", "B": "B cell", "Macrophage": "Macrophage",
+               "Endothelial": "Endothelial", "Stroma": "Stroma"}
+T_FINE = {"CD8^{+} T cells": "CD8 T cell", "CD4^{+} T cells": "CD4 T cell", "T_{Reg} & T_{Ex}": "Treg"}
 PAM50 = {"LumA": "LumA", "LumB": "LumB", "Her2": "Her2", "Basal": "Basal", "claudin-low": "claudin-low"}
 
 
@@ -55,6 +60,8 @@ def metabric_cells() -> pd.DataFrame:
     out[list((SHARED | METABRIC_ONLY).values())] = m[list((SHARED | METABRIC_ONLY).values())]
     out["published"] = base["coarse"]
     out["published_phenotype"] = base["cellPhenotype"]
+    fine = base["cellPhenotype"].map(T_FINE).where(base["is_epithelial"] == 0)
+    out["published_fine"] = fine.fillna(base["coarse"].map(COARSE_NAME))
     return out
 
 
@@ -70,6 +77,7 @@ def basel_cells(cores: pd.DataFrame) -> pd.DataFrame:
         out[m] = c[m]
     out["published"] = c["coarse"]
     out["published_phenotype"] = c["cluster"].astype(str)
+    out["published_fine"] = c["coarse"].map(COARSE_NAME)
     out["published_id"] = c["id"]
     out.attrs["n_location_cells"] = len(cells)
     return out

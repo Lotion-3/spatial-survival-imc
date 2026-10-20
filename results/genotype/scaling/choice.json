@@ -1,0 +1,58 @@
+{
+  "rule": "filtered < 10% both cohorts; every round-1 class in >= 80% of images both cohorts; max mean assigned",
+  "presence_bar_used": 0.8,
+  "relaxed": false,
+  "seed": 20261019,
+  "n_images_per_cohort": 20,
+  "summary": [
+    {
+      "cofactor": 1,
+      "norm": "none",
+      "assigned": 0.6662,
+      "max_filtered": 0.1998,
+      "presence": 0.85
+    },
+    {
+      "cofactor": 1,
+      "norm": "p99",
+      "assigned": 0.822,
+      "max_filtered": 0.086,
+      "presence": 0.95
+    },
+    {
+      "cofactor": 1,
+      "norm": "zscore",
+      "assigned": 0.7088,
+      "max_filtered": 0.1291,
+      "presence": 0.9
+    },
+    {
+      "cofactor": 5,
+      "norm": "none",
+      "assigned": 0.47,
+      "max_filtered": 0.4077,
+      "presence": 0.95
+    },
+    {
+      "cofactor": 5,
+      "norm": "p99",
+      "assigned": 0.7528,
+      "max_filtered": 0.1288,
+      "presence": 0.95
+    },
+    {
+      "cofactor": 5,
+      "norm": "zscore",
+      "assigned": 0.6057,
+      "max_filtered": 0.2252,
+      "presence": 0.95
+    }
+  ],
+  "chosen": {
+    "cofactor": 1,
+    "norm": "p99",
+    "mean_assigned": 0.822,
+    "max_filtered": 0.086,
+    "min_class_presence": 0.95
+  }
+}

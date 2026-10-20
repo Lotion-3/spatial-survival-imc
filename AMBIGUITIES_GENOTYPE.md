@@ -148,3 +148,49 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
 - **Plots:** the package's `PlotExpProb` is drawn for the chosen setting and for (5, none) on one image per cohort.
 - **What the rule does not use:** published labels, subtype, genotype and outcome.
 - **Why these criteria:** the task asks for "assignment rate and marker-probability plots look sensible". The filtered fraction guards against settings that push every EP to one extreme. Class presence guards against settings that assign many cells but lose a lineage.
+
+**S1.3 Scaling outcome** (`results/genotype/scaling/`). Only one setting met the pre-declared rule: **arcsinh cofactor 1, channels divided by the cohort 99th percentile × 10**.
+
+| Setting | Mean assigned | Worst-cohort filtered | Worst class presence | Eligible |
+|---|---|---|---|---|
+| (1, none) | 0.666 | 0.200 | 0.85 | no |
+| (1, p99) | 0.822 | 0.086 | 0.95 | **yes** |
+| (1, z-score) | 0.709 | 0.129 | 0.90 | no |
+| (5, none) | 0.470 | 0.408 | 0.95 | no |
+| (5, p99) | 0.753 | 0.129 | 0.95 | no |
+| (5, z-score) | 0.606 | 0.225 | 0.95 | no |
+
+- **Per cohort:** METABRIC assigned 77.4%, filtered 8.6%; Basel assigned 87.0%, filtered 5.9%.
+- **Why the raw scale filters so much:** with no normalisation (the package's intended input), many cells have every marker EP < 0.4 and are filtered (20–41%). The package's slope-1 sigmoid assumes CODEX-like dynamic ranges, which IMC mean ion counts do not have; rescaling to that range is what p99 × 10 does.
+- **Plot check:** the `PlotExpProb` maps for the chosen setting (`scaling/ep_*_1_p99/`) show panCK-high cells in cohesive nests and sparse CD3-high cells between them.
+- **Fixed for the full run:** the choice is used unchanged for all images of both cohorts.
+
+**S1.4 Full run.**
+- **METABRIC:** 749 images, 1,066,966 cells, 90 s on 18 workers. 748 images typed; 1 image had ≤ 10 cells, so the package returns NULL and its 5 cells are "Skipped".
+- **Basel:** 288 images, 762,776 cells, 42 s.
+- **No subset was needed.**
+- **Class shares** (`celesta/class_share.csv`):
+
+| Cohort | Tumour | T (unresolved) | CD8 T | CD4 T | Treg | B | Macrophage | Endothelial | Stroma | Unknown | Filtered |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| METABRIC | 43.8% | 1.5% | 3.1% | 2.6% | 2.4% | 3.8% | 8.3% | 5.5% | 7.2% | 14.3% | 7.6% |
+| Basel | 47.5% | 7.8% | – | – | – | 2.5% | 11.7% | 4.0% | 10.7% | 8.3% | 7.4% |
+
+**S1.5 Acceptance** (`celesta/acceptance.csv`).
+- **Rule:** each class is assigned (≥ 1 cell) in ≥ 80% of the images where its defining marker is present.
+- **"Present"** means at least 5 cells above the cohort-level crossing point from the package's own `BuildSigmoidFunction` (its 2-component GMM), fitted once per cohort on 100,000 cells drawn with seed 20261019.
+- **Result: all classes pass in both cohorts.** The lowest is Treg in METABRIC at 0.970. No class was merged.
+
+**S1.6 Concordance with the published labels** (concordance only; neither labelling is ground truth).
+- **Round-1 level** (T subsets merged into T), on cells that CELESTA assigned to a shared class:
+  - METABRIC: agreement 0.725, Cohen's κ 0.545.
+  - Basel: agreement 0.726, κ 0.571.
+- **The T-cell subclasses agree much less** (`celesta/concordance_tsubsets_metabric.csv`):
+  - CD8 T: 49% of CELESTA CD8 T cells are published "CD8⁺ T cells"; 47% of published CD8⁺ T cells are recovered.
+  - CD4 T: 15% and 26%.
+  - **Treg: 2% and 8%.** 48.6% of CELESTA "Tregs" are cells that Danenberg et al. call epithelial. The CELESTA Treg class is 2.4% of cells, against 0.6% for the published "T_Reg & T_Ex" class.
+- **Likely cause:** the package min-max rescales EPs within each image, so every image has some cells near EP = 1 for FOXP3 and CD3. The default "low" anchor threshold of 0.9 also lets panCK-intermediate cells into the T branch.
+- **Decision (made before any genotype or subtype was linked):**
+  - The signature and thresholds are **not** retuned against the published labels. They were fixed in advance, and the published labels are the comparison, not a target.
+  - Results that depend on the Treg class are marked as such: P3 (Treg–T CLQ by BRCA1) and question (d) (Tumour–Treg CLQ by node status). The pre-planned refit on the published labels, which have their own Treg class, is the check for them.
+  - The CD8 T class, used for H1, is moderately concordant.

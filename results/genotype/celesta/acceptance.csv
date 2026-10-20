@@ -1,0 +1,16 @@
+cohort,cell_type,defining_marker,images,images_marker_present,images_assigned,share_assigned,passes_80
+metabric,Tumour,panCK,749,709,707,0.997179125528914,TRUE
+metabric,T cell,CD3,749,725,696,0.96,TRUE
+metabric,B cell,CD20,749,710,695,0.97887323943662,TRUE
+metabric,Macrophage,CD68,749,737,737,1,TRUE
+metabric,Endothelial,CD31-vWF,749,746,746,1,TRUE
+metabric,Stroma,SMA,749,745,744,0.998657718120805,TRUE
+metabric,CD8 T cell,CD8,749,728,718,0.986263736263736,TRUE
+metabric,CD4 T cell,CD4,749,729,712,0.976680384087791,TRUE
+metabric,Treg,FOXP3,749,742,720,0.970350404312669,TRUE
+basel,Tumour,panCK,288,277,277,1,TRUE
+basel,T cell,CD3,288,287,287,1,TRUE
+basel,B cell,CD20,288,286,286,1,TRUE
+basel,Macrophage,CD68,288,285,285,1,TRUE
+basel,Endothelial,CD31-vWF,288,287,287,1,TRUE
+basel,Stroma,SMA,288,286,286,1,TRUE

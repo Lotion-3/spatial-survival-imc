@@ -1,0 +1,4 @@
+celesta_class,published_phenotype,celesta_cells,published_cells,both,celesta_cells_published_epithelial,share_of_celesta_in_published,share_of_published_in_celesta
+CD8 T cell,CD8^{+} T cells,33005,34588,16227,8393,0.491652779881836,0.4691511506881
+CD4 T cell,CD4^{+} T cells,27581,15647,4120,8412,0.149378195134332,0.26330926056113
+Treg,T_{Reg} & T_{Ex},25432,6318,516,12352,0.0202893991821327,0.0816714150047483
