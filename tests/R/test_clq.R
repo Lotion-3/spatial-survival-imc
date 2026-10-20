@@ -71,3 +71,16 @@ test_that("within-image label permutations are centred on 1 (classic scale)", {
                         script = script)
   expect_identical(res$perm_mean, res2$perm_mean)
 })
+
+test_that("k values outside perm_ks get the identical observed CLQ and NA permutation columns", {
+  set.seed(5)
+  n <- 600
+  d <- data.table(image = "toy", X = runif(n, 0, 400), Y = runif(n, 0, 400), lab = sample(1:3, n, replace = TRUE))
+  full <- clq_one_image(d, types = c("A", "B", "C"), ks = c(10, 20), perms = 30, seed = 3, keep_unknown = FALSE,
+                        script = script)
+  part <- clq_one_image(d, types = c("A", "B", "C"), ks = c(10, 20), perms = 30, seed = 3, keep_unknown = FALSE,
+                        script = script, perm_ks = 20)
+  expect_equal(part$clq, full$clq)
+  expect_true(all(is.na(part[k == 10, perm_mean])))
+  expect_equal(part[k == 20, perm_mean], full[k == 20, perm_mean])
+})

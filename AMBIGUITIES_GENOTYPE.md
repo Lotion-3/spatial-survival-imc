@@ -194,3 +194,16 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
   - The signature and thresholds are **not** retuned against the published labels. They were fixed in advance, and the published labels are the comparison, not a target.
   - Results that depend on the Treg class are marked as such: P3 (Treg–T CLQ by BRCA1) and question (d) (Tumour–Treg CLQ by node status). The pre-planned refit on the published labels, which have their own Treg class, is the check for them.
   - The CD8 T class, used for H1, is moderately concordant.
+
+## Stage 2: CLQ features
+
+**S2.1 Compute budget and the permutation scope (deviation).**
+- **First attempt.** The first attempt ran 500 within-image permutations at every k (10, 20, 40) for every run. One `get_CLQ` pass is about linear in image size: 0.08 s at 1,000 cells, 0.71 s for the largest METABRIC image (8,480 typed cells). That makes about 2.5 CPU-minutes per average METABRIC image for 3 k × 500 permutations, and about 30 CPU-hours for METABRIC alone.
+- **Memory problem.** In that attempt each PSOCK worker loaded OpenBLAS with one thread per core and reserved about 2.3 GB of committed memory. With 18 workers, the 15.6 GB machine ran out of commit, and the run slowed sharply in its tail. I then killed what I took to be idle workers to free memory, and that also ended the run's master process. The partial METABRIC run (about 2 h 45 min) was lost; no outputs from it are used.
+- **Fixes.**
+  - `clq_official.R` and `celesta_official.R` now set `OPENBLAS_NUM_THREADS = 1` before starting workers (about 0.37 GB per worker). This does not affect any result.
+  - Permutations are restricted to the primary k with a new `--perm-k` option.
+- **Scope used.**
+  - The METABRIC and Basel CELESTA runs get **500 permutations at k = 20** (lab default) for per-image significance and the stage-2 null check. At k = 10 and 40 only the observed CLQ is computed.
+  - The robustness runs get observed CLQs only: METABRIC round-1 labels, published labels in both cohorts, and the lab's keep-Unknown convention.
+- **Why the association results are unaffected.** The patient-level models (stage 3) use the observed CLQ only. The task's "500 permutations per image" is met at the primary k. The unit tests show that the observed CLQ at a k without permutations is identical to the one computed alongside permutations.

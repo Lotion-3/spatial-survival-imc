@@ -1,5 +1,6 @@
 """Every markdown table row in README.md must appear verbatim in results/tables.md,
-which scripts/report_tables.py generates from the saved results files."""
+results/part2/tables.md or results/genotype/tables.md, which scripts/report_tables.py,
+scripts/report_part2.py and scripts/genotype_report.R generate from the saved results files."""
 
 from pathlib import Path
 
@@ -16,6 +17,9 @@ def test_readme_tables_come_from_results():
     part2 = ROOT / "results" / "part2" / "tables.md"  # part II + CELESTA tables (scripts/report_part2.py)
     if part2.exists():
         generated |= set(part2.read_text(encoding="utf-8").splitlines())
+    part4 = ROOT / "results" / "genotype" / "tables.md"  # part IV tables (scripts/genotype_report.R)
+    if part4.exists():
+        generated |= set(part4.read_text(encoding="utf-8").splitlines())
     readme = (ROOT / "README.md").read_text(encoding="utf-8").splitlines()
     rows = [l for l in readme if l.startswith("| ") and not set(l) <= set("|- ")]
     # The data-files table in section 2 describes downloads, not results.

@@ -25,6 +25,10 @@ suppressPackageStartupMessages({
   library(parallel)
 })
 
+# One BLAS thread per R process: each PSOCK worker otherwise reserves OpenBLAS buffers for every core
+# (about 2.3 GB of committed memory per worker here) and oversubscribes the CPU. Workers inherit this.
+Sys.setenv(OPENBLAS_NUM_THREADS = "1", OMP_NUM_THREADS = "1")
+
 parse_args <- function(args) {
   out <- list(cofactor = "5", norm = "none", workers = "1", filter = "1", images = "", ep_out = "",
               status_out = "", number_of_neighbors = "5", bandwidth = "100", max_iteration = "10",

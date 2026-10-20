@@ -3,7 +3,7 @@
 # results/genotype/environment.json), run unmodified.
 #
 #   Rscript scripts/clq_official.R --labels labels.csv.gz --cells cells.csv.gz --types types.csv \
-#       --out clq.csv.gz [--k 10,20,40] [--perms 500] [--seed 20261019] [--workers 18] \
+#       --out clq.csv.gz [--k 10,20,40] [--perm-k 20] [--perms 500] [--seed 20261019] [--workers 18] \
 #       [--label-col cell_type_number] [--keep-unknown 0] [--seeds-out seeds.csv]
 #
 # The lab script is a driver file: its top-level loops glob *cell_type_assignment.csv in the working
@@ -31,6 +31,10 @@ suppressPackageStartupMessages({
   library(data.table)
   library(parallel)
 })
+
+# One BLAS thread per R process: each PSOCK worker otherwise reserves OpenBLAS buffers for every core
+# (about 2.3 GB of committed memory per worker here) and oversubscribes the CPU. Workers inherit this.
+Sys.setenv(OPENBLAS_NUM_THREADS = "1", OMP_NUM_THREADS = "1")
 
 LAB_FUNCTIONS <- c("get_CLQ", "find_cell_type_neighbors", "KNN_neighbors", "significance_matrix_gen")
 LAB <- new.env(parent = globalenv())  # the lab's functions, evaluated from the original file
@@ -81,8 +85,9 @@ clq_matrix <- function(lab, coords, nb_list, n_types, counts) {
   m
 }
 
-# One image: CLQ at every k plus `perms` label permutations (the same permutations for every k).
-clq_one_image <- function(d, types, ks, perms, seed, keep_unknown, script) {
+# One image: CLQ at every k, plus `perms` label permutations at the k values in perm_ks (the same
+# permutations for every such k). Other k get the observed CLQ only (permutation columns NA).
+clq_one_image <- function(d, types, ks, perms, seed, keep_unknown, script, perm_ks = ks) {
   suppressPackageStartupMessages({
     library(data.table); library(spdep); library(dplyr)
   })
@@ -97,9 +102,21 @@ clq_one_image <- function(d, types, ks, perms, seed, keep_unknown, script) {
   if (nrow(d) <= max(ks)) return(NULL)  # kNN needs more cells than k
   set.seed(seed)
   perm_labels <- lapply(seq_len(perms), function(r) sample(lab, length(lab), replace = FALSE))
+  a <- rep(seq_len(n_types), each = n_types)
+  b <- rep(seq_len(n_types), n_types)
+  rare <- counts[a] <= 5 | counts[b] <= 5
   for (k in ks) {
     nb_list <- LAB$KNN_neighbors(coords, number_of_neighbors = k)
     obs <- clq_matrix(lab, coords, nb_list, n_types, counts)
+    obs_v <- as.vector(t(obs))
+    if (!(k %in% perm_ks) || perms == 0) {
+      out[[as.character(k)]] <- data.table(
+        image = d$image[1], k = k, cell_A = types[a], cell_B = types[b], n_A = counts[a], n_B = counts[b],
+        n_typed = n_typed, n_all = nrow(d),
+        clq = ifelse(rare, NA_real_, obs_v), clq_k = ifelse(rare, NA_real_, obs_v / k),
+        perm_mean = NA_real_, perm_sd = NA_real_, percentile = NA_real_, significant = NA, p_two_sided = NA_real_)
+      next
+    }
     perm <- vapply(perm_labels, function(pl) as.vector(t(clq_matrix(pl, coords, nb_list, n_types, counts))),
                    numeric(n_types^2))  # rows ordered cellA-major, as in the lab's CLQ_matrix_R
     # Lab significance rule, run unmodified in a scratch directory (it reads cell_types_celesta.csv and
@@ -118,12 +135,8 @@ clq_one_image <- function(d, types, ks, perms, seed, keep_unknown, script) {
                                    list_of_matrices = perm_df, CLQ_matrix_original = obs_named, df_c = df_c)
     setwd(old)
     unlink(wd, recursive = TRUE)
-    obs_v <- as.vector(t(obs))
     pm <- rowMeans(perm)
     p2 <- (1 + rowSums(abs(perm - pm) >= abs(obs_v - pm) - 1e-12)) / (1 + perms)
-    a <- rep(seq_len(n_types), each = n_types)
-    b <- rep(seq_len(n_types), n_types)
-    rare <- counts[a] <= 5 | counts[b] <= 5
     out[[as.character(k)]] <- data.table(
       image = d$image[1], k = k, cell_A = types[a], cell_B = types[b], n_A = counts[a], n_B = counts[b],
       n_typed = n_typed, n_all = nrow(d),
@@ -136,7 +149,7 @@ clq_one_image <- function(d, types, ks, perms, seed, keep_unknown, script) {
   rbindlist(out)
 }
 
-run_index <- function(i) clq_one_image(groups[[i]], types, ks, perms, seeds$seed[i], keep_unknown, script)
+run_index <- function(i) clq_one_image(groups[[i]], types, ks, perms, seeds$seed[i], keep_unknown, script, perm_ks)
 
 main <- function() {
   opt <- parse_args(commandArgs(trailingOnly = TRUE))
@@ -152,6 +165,7 @@ main <- function() {
   }
   d[, lab := as.integer(lab)]
   ks <- as.integer(strsplit(opt$k, ",")[[1]])
+  perm_ks <- if (is.null(opt$perm_k)) ks else as.integer(strsplit(opt$perm_k, ",")[[1]])
   perms <- as.integer(opt$perms)
   base_seed <- as.integer(opt$seed)
   images <- sort(unique(d$image))
@@ -159,7 +173,8 @@ main <- function() {
   # Shared state lives in the global environment (and in each worker's), so the task function
   # run_index() is a top-level function and its closure carries no data when serialised.
   shared <- list(groups = split(d, by = "image", keep.by = TRUE)[images], types = types, ks = ks, perms = perms,
-                 seeds = seeds, keep_unknown = opt$keep_unknown == "1", script = script)
+                 seeds = seeds, keep_unknown = opt$keep_unknown == "1", script = script,
+                 perm_ks = perm_ks)
   list2env(shared, .GlobalEnv)
   t0 <- Sys.time()
   workers <- as.integer(opt$workers)
@@ -174,7 +189,8 @@ main <- function() {
   }
   out <- rbindlist(res)
   fwrite(out, opt$out)
-  if (nzchar(opt$seeds_out)) fwrite(seeds[, .(image, seed, perms = perms, k = opt$k)], opt$seeds_out)
+  if (nzchar(opt$seeds_out)) fwrite(seeds[, .(image, seed, perms = perms, k = opt$k, perm_k = paste(perm_ks, collapse = ","))],
+                                    opt$seeds_out)
   cat(sprintf("clq_official: %d images, k = %s, %d permutations, %.1f min, %d workers\n", length(images), opt$k,
               perms, as.numeric(difftime(Sys.time(), t0, units = "mins")), workers))
 }
