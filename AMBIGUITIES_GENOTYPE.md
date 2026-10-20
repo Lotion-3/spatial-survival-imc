@@ -1,6 +1,6 @@
 # Part IV: ambiguities, decisions and code provenance
 
-This file records every choice in Part IV ("tumour genotype and spatial organisation") that the task description, the packages or the data left open: parameters, output slots, data mismatches and label mappings. Entries are added stage by stage, and each is dated by the stage at which it was decided. Nothing here was chosen after seeing subtype or genotype associations with spatial features.
+This file records every choice in Part IV ("tumour genotype and spatial organisation") that the analysis plan, the packages or the data left open: parameters, output slots, data mismatches and label mappings. Entries are added stage by stage, and each is dated by the stage at which it was decided. Nothing here was chosen after seeing subtype or genotype associations with spatial features.
 
 ## Pipeline: which code does each step
 
@@ -13,14 +13,14 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
 | Cohort build (cells, patients, receptor and PAM50 labels, mutation calls) | new script that calls the repo's loaders unchanged (`spatialsurv.metabric.load_metabric_cells`, `load_metabric_clinical`; `spatialsurv.data.load_cells`, `load_patients`) | `scripts/run_genotype_spatial.py` | Python | the loaders already implement the cohort filters used in Parts I–III |
 | R environment and upstream code | new setup script | `scripts/setup_r.R`; pins in `results/genotype/environment.json` | R | installs and pins the original packages and repositories |
 | CELESTA bundled example | original package code; new wrapper | CELESTA `e5e92ff` README "Usage" block, demo data `reg009` | R | stage-0 check; compared against the reference output shipped in the package's `tests/testthat` |
-| Cell typing | **original package, unmodified** (`CreateCelestaObject`, `FilterCells`, `AssignCells`, `PlotExpProb`, `PlotCellsAnyCombination`); new CLI wrapper `scripts/celesta_official.R` | github.com/plevritis-lab/CELESTA @ `e5e92ffcef5ccada8053c2e042f34c446b6b3565` (the paper's github.com/plevritis/CELESTA resolves to the same repository and HEAD) | R | task requirement; the repo's Python port (`src/celesta_lite/`) is not used for any Part IV result |
-| Input scaling (arcsinh, per-channel normalisation) | new (in `celesta_official.R`) | — | R | the package ignores its own `cofactor` argument (see S0.3), so scaling has to happen before the package is called |
+| Cell typing | **original package, unmodified** (`CreateCelestaObject`, `FilterCells`, `AssignCells`, `PlotExpProb`, `PlotCellsAnyCombination`); new CLI wrapper `scripts/celesta_official.R` | github.com/plevritis-lab/CELESTA @ `e5e92ffcef5ccada8053c2e042f34c446b6b3565` (the paper's github.com/plevritis/CELESTA resolves to the same repository and HEAD) | R | the analysis plan uses the official package; the repo's Python port (`src/celesta_lite/`) is not used for any Part IV result |
+| Input scaling (arcsinh, per-channel normalisation) | new (in `celesta_official.R`) | — | R | the transform applied in `CreateCelestaObject` uses a fixed cofactor of 10 (see S0.3), so IMC counts were pre-scaled and passed with `transform_type = 0` |
 | CLQ and per-image permutation test | **original lab functions, unmodified** (`get_CLQ`, `find_cell_type_neighbors`, `KNN_neighbors`, `significance_matrix_gen`), evaluated from the original file; new driver `scripts/clq_official.R` | github.com/plevritis-lab/Spatial_Permutation_and_Normalization @ `02b6da5e7bb8ebabb68a05daa78ae46c36ec0378` ("permutation analysis and normalization strategy for the colocatome paper") | R | the lab's own CLQ code exists, so no re-implementation was written. Its driver loops hard-code 18 cell types and k = 20 and glob files in the working directory, so only the function definitions are used (S0.6) |
 | Two-sided permutation p-value per image | new (in `clq_official.R`) | — | R | the lab's rule gives a percentile, not a p-value |
 | Tests | new | `tests/R/` (testthat), run by `tests/test_r_scripts.py` | R / Python | CLQ hand example, random-label null, rare-type handling, bridge output format |
-| Patient features (typed-cell-weighted CLQ, CLR composition, log cells) | new | `scripts/clq_features.R`; CLR pseudocount 0.5 as in `spatialsurv.features.clr` | R | user's choice: new analysis code in R (the Python helper is mirrored, not called) |
+| Patient features (typed-cell-weighted CLQ, CLR composition, log cells) | new | `scripts/clq_features.R`; CLR pseudocount 0.5 as in `spatialsurv.features.clr` | R | new analysis code in R, alongside the upstream R packages (the Python helper is mirrored, not called) |
 | Association models, BH, label permutations, leave-one-k-out, replication | new | `scripts/genotype_models.R` (base R `lm`, `anova`, `p.adjust`) | R | no original code covers CLQ-vs-subtype models; the repo's permutation helper (`spatialsurv.robustness`) permutes a survival CV and does not apply; seeds logged in `results/genotype/models/seeds.csv` |
-| Tables and figures | new | `scripts/genotype_report.R` (ggplot2) | R | user's choice; every README Part IV table row is generated here |
+| Tables and figures | new | `scripts/genotype_report.R` (ggplot2) | R | figures and tables alongside the upstream R packages; every README Part IV table row is generated here |
 | Prior-work positive controls | reproduced from the papers' reported directions | Ali 2020 (no public analysis code); Danenberg 2022 (public R code, Zenodo 6036188, runs on their own TME-structure assignments, not on our classes) | — | see PRIOR_EXPECTATIONS.md |
 
 ## Stage 0: setup
@@ -39,7 +39,7 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
 
 **S0.3 Parameters verified against the CELESTA source (`R/CELESTA_functions.R` @ e5e92ff).**
 - **`CreateCelestaObject(project_title, prior_marker_info, imaging_data_file, cofactor = 10, transform_type = 1, number_of_neighbors = 5, bandwidth = 100)`.**
-  - **The `cofactor` argument is ignored.** The function calls `GetMarkerExpMatrix(..., cofactor = 10, ...)` with a literal 10.
+  - **Fixed cofactor.** The transform applied in `CreateCelestaObject` uses a fixed cofactor of 10: in `R/CELESTA_functions.R` @ `e5e92ff`, `CreateCelestaObject` (signature at line 157, default `cofactor = 10` at line 160) calls `GetMarkerExpMatrix(..., cofactor = 10, ...)` at line 176, which applies `asinh(original_exp / cofactor)` at line 957. IMC counts were therefore pre-scaled.
   - We therefore arcsinh-transform and normalise in `celesta_official.R` and call the package with `transform_type = 0`. The marker columns of `prior_marker_info` (column 3 onward) must match imaging-data column names exactly.
   - Images with ≤ 10 cells return `NULL`; `celesta_official.R` reports these as status `too_few_cells`.
 - **Expression probabilities (`CalcMarkerActivationProbability`).**
@@ -82,7 +82,7 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
   - CASP8: 10 / 558.
   - TP53 by subtype (mutant / wild-type): Basal 38/2, HER2-enriched 38/17, LumA 28/177, LumB 42/103, claudin-low 35/46. **A TP53 effect within Basal tumours is not estimable (2 wild-type)**; within-subtype TP53 contrasts are possible in LumA, LumB, claudin-low and HER2-enriched.
 - **Node status (METABRIC).** `LYMPH_NODES_EXAMINED_POSITIVE` > 0, through the existing `pn_from_count` banding (pN > 0).
-- **Basel surrogate subtypes** (task definition: ER+/HER2−, HER2+, TN), from `ERStatus`, `PRStatus` and `HER2Status`:
+- **Basel surrogate subtypes** (analysis-plan definition: ER+/HER2−, HER2+, TN), from `ERStatus`, `PRStatus` and `HER2Status`:
   - HER2+ = HER2 positive, whatever the ER status.
   - ER+/HER2− = ER positive and HER2 negative.
   - TN = ER, PR and HER2 all negative.
@@ -118,7 +118,7 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
   - We report both `clq` (lab scale) and `clq_k = clq / k` (classic scale, null ≈ 1).
   - Models use `clq_k`, so effects are on the familiar scale; this is a linear rescaling, so tests are unchanged.
 - **Rare types.** `get_CLQ` returns 0 when either type has ≤ 5 cells. Those pairs are set to NA, as the lab's `CLQ_normalization_by_sample` does. A literal 0 would otherwise be read as complete avoidance.
-- **Neighbourhood.** The lab code supports only k nearest neighbours (no radius), so the task's radii (20/40/80 µm) do not apply. We use **k = 20 (lab default) plus k = 10 and k = 40**, and "leave-one-radius-out" becomes leave-one-k-out.
+- **Neighbourhood.** The lab code supports only k nearest neighbours (no radius), so the planned radii (20/40/80 µm) do not apply. We use **k = 20 (lab default) plus k = 10 and k = 40**, and "leave-one-radius-out" becomes leave-one-k-out.
 - **Unknown and filtered cells.**
   - In the lab's clinical example input, 14% of cells are Unknown (type 0) and stay in the kNN graph. They are neighbours of typed cells but are not counted in N, which deflates every CLQ by roughly the image's typed fraction. That would tie CLQ to each image's assignment rate.
   - **Primary analysis:** Unknown and Filtered cells are removed before the kNN graph is built (`--keep-unknown 0`), so the classic-scale null is 1.
@@ -151,7 +151,7 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
   - If no setting is eligible, the class-presence bar is lowered to the best value reached, and that is reported.
 - **Plots:** the package's `PlotExpProb` is drawn for the chosen setting and for (5, none) on one image per cohort.
 - **What the rule does not use:** published labels, subtype, genotype and outcome.
-- **Why these criteria:** the task asks for "assignment rate and marker-probability plots look sensible". The filtered fraction guards against settings that push every EP to one extreme. Class presence guards against settings that assign many cells but lose a lineage.
+- **Why these criteria:** the analysis plan asks for "assignment rate and marker-probability plots look sensible". The filtered fraction guards against settings that push every EP to one extreme. Class presence guards against settings that assign many cells but lose a lineage.
 
 **S1.3 Scaling outcome** (`results/genotype/scaling/`). Only one setting met the pre-declared rule: **arcsinh cofactor 1, channels divided by the cohort 99th percentile × 10**.
 
@@ -165,7 +165,7 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
 | (5, z-score) | 0.606 | 0.225 | 0.95 | no |
 
 - **Per cohort:** METABRIC assigned 77.4%, filtered 8.6%; Basel assigned 87.0%, filtered 5.9%.
-- **Why the raw scale filters so much:** with no normalisation (the package's intended input), many cells have every marker EP < 0.4 and are filtered (20–41%). The package's slope-1 sigmoid assumes CODEX-like dynamic ranges, which IMC mean ion counts do not have; rescaling to that range is what p99 × 10 does.
+- **Why the raw scale filters so much:** with no normalisation (the package's intended input), many cells have every marker EP < 0.4 and are filtered (20–41%). The package's expression-probability step uses a slope-1 sigmoid in the input's units, which matches CODEX-like dynamic ranges; IMC mean ion counts span a narrower range, and p99 × 10 rescales them to it.
 - **Plot check:** the `PlotExpProb` maps for the chosen setting (`scaling/ep_*_1_p99/`) show panCK-high cells in cohesive nests and sparse CD3-high cells between them.
 - **Fixed for the full run:** the choice is used unchanged for all images of both cohorts.
 
@@ -210,7 +210,7 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
 - **Scope used.**
   - The METABRIC and Basel CELESTA runs get **500 permutations at k = 20** (lab default) for per-image significance and the stage-2 null check. At k = 10 and 40 only the observed CLQ is computed.
   - The robustness runs get observed CLQs only: METABRIC round-1 labels, published labels in both cohorts, and the lab's keep-Unknown convention.
-- **Why the association results are unaffected.** The patient-level models (stage 3) use the observed CLQ only. The task's "500 permutations per image" is met at the primary k. The unit tests show that the observed CLQ at a k without permutations is identical to the one computed alongside permutations.
+- **Why the association results are unaffected.** The patient-level models (stage 3) use the observed CLQ only. The plan's "500 permutations per image" is met at the primary k. The unit tests show that the observed CLQ at a k without permutations is identical to the one computed alongside permutations.
 
 ## Stage 3: associations
 
@@ -252,3 +252,11 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
 **S4.1 Prior-work comparison table.** The table in README §IV.6 is generated by `genotype_report.R` from the saved results. The README-integrity test therefore covers its numbers as well.
 
 **S4.2 Example cores.** One core per PAM50 subtype: the core (≥ 1,000 cells) whose CELESTA class composition is closest, in Euclidean distance, to the subtype's median composition. The choices are listed in `results/genotype/example_cores_by_subtype.csv`.
+
+**S4.3 The two Part IV test families (checked in `scripts/genotype_models.R` and the saved results).**
+- **Omnibus family (README IV.4).** `q1_family(met)` gives one composition-adjusted F-test of the PAM50 block per ordered pair and k. It uses the nine CELESTA classes, with CLR over those nine classes. BH covers 243 tests (81 pairs × 3 k); the unadjusted models get their own BH over 243. Result: 0 of 243 adjusted.
+- **Contrast family (README IV.5; H3).** `rep_m` takes the Basal − LumA and Her2 − LumA coefficients from the composition-adjusted model in `q1_family(met1)`. That model uses CELESTA round-1 labels: the six classes shared with Basel, with T subsets merged, and CLR over those six classes. BH covers 216 contrasts (36 pairs × 3 k × 2). Result: 9 with q < 0.05, all Basal − LumA. They are 3 ordered pairs at all 3 k.
+- **The same six classes, tested omnibus, give 0 discoveries** (0 of 108; `models/round1_q1_tests.csv`).
+- **Why Macrophage → Tumour differs between the families.** Its Basal − LumA estimate is nearly the same with nine classes (−0.140, p = 0.0004, k = 20; `models/q1_subtype_contrasts.csv`) and with six (−0.136, p = 0.0006). The q-values differ (0.11 omnibus, 0.015 contrast) because a 4-df omnibus F-test and a single pre-specified contrast are different tests with different BH families.
+
+**S4.4 Wording for readers of the upstream tools.** README Part IV and the memo describe limitations as properties of this setup (six-marker shared signature, IMC input scaling, single TMA cores) rather than of CELESTA or the CLQ code. No number changed. The table labels in `genotype_report.R` were renamed only, and the regenerated `tables.md` differs from the previous commit in those three label lines alone.

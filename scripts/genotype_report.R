@@ -88,7 +88,7 @@ main <- function() {
   q2t <- fread(file.path(mod, "q2_tp53.csv"))
   q2p <- fread(file.path(mod, "q2_pik3ca.csv"))
   fam <- rbind(
-    q1[, .(Question = "Q1 subtype (F-test)", Adjusted = ifelse(adjusted, "composition-adjusted", "unadjusted"), Tests = .N,
+    q1[, .(Question = "Q1 subtype, omnibus F-test (9 classes)", Adjusted = ifelse(adjusted, "composition-adjusted", "unadjusted"), Tests = .N,
            `q < 0.05` = sum(q < 0.05), `p < 0.05` = sum(p < 0.05)), by = adjusted][, -1],
     q2t[, .(Question = "Q2 TP53", Adjusted = ifelse(adjusted, "composition-adjusted", "unadjusted"), Tests = .N,
             `q < 0.05` = sum(q < 0.05), `p < 0.05` = sum(p < 0.05)), by = adjusted][, -1],
@@ -140,7 +140,7 @@ main <- function() {
   rep <- fread(file.path(mod, "replication.csv"))
   repf <- fread(file.path(mod, "replication_metabric_family.csv"))
   lines <- c(lines, "## Replication in Basel", "",
-             md(data.table(`METABRIC round-1 contrasts tested` = nrow(repf), `q < 0.05` = repf[, sum(q < 0.05)],
+             md(data.table(`METABRIC Basal or Her2 - LumA contrasts tested (6 shared classes)` = nrow(repf), `q < 0.05` = repf[, sum(q < 0.05)],
                            `Refitted in Basel` = nrow(rep), `Same sign` = if (nrow(rep)) sum(rep$same_sign) else 0,
                            `Same sign and Basel p < 0.05` = if (nrow(rep)) rep[, sum(same_sign & basel_p < 0.05)] else 0)))
   if (nrow(rep)) lines <- c(lines, md(rep[order(metabric_q), .(Pair = paste(cell_A, "->", cell_B), k,

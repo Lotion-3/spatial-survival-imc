@@ -124,8 +124,8 @@
 
 | Question | Adjusted | Tests | q < 0.05 | p < 0.05 |
 |---|---|---|---|---|
-| Q1 subtype (F-test) | composition-adjusted | 243 | 0 | 24 |
-| Q1 subtype (F-test) | unadjusted | 243 | 7 | 42 |
+| Q1 subtype, omnibus F-test (9 classes) | composition-adjusted | 243 | 0 | 24 |
+| Q1 subtype, omnibus F-test (9 classes) | unadjusted | 243 | 7 | 42 |
 | Q2 TP53 | composition-adjusted | 243 | 0 | 33 |
 | Q2 TP53 | unadjusted | 243 | 0 | 39 |
 | Q2 PIK3CA | composition-adjusted | 243 | 0 | 10 |
@@ -166,7 +166,7 @@
 
 ## Replication in Basel
 
-| METABRIC round-1 contrasts tested | q < 0.05 | Refitted in Basel | Same sign | Same sign and Basel p < 0.05 |
+| METABRIC Basal or Her2 - LumA contrasts tested (6 shared classes) | q < 0.05 | Refitted in Basel | Same sign | Same sign and Basel p < 0.05 |
 |---|---|---|---|---|
 | 216 | 9 | 9 | 9 | 4 |
 
