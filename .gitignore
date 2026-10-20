@@ -5,3 +5,5 @@ __pycache__/
 .pytest_cache/
 third_party/
 Rplots.pdf
+results/genotype/models_dryrun/
+results/genotype/tables_dryrun.md
