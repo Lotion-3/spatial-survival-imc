@@ -1,0 +1,12 @@
+id,test,estimate,lo,hi,p,n,outcome
+H1,"METABRIC Tumour -> CD8 T cell, k = 20, Basal - LumA (adjusted)",-0.0466013593927567,-0.156760325588859,0.0635576068033454,0.405973754994404,368,fail
+H1-rev,"METABRIC CD8 T cell -> Tumour, k = 20, Basal - LumA (adjusted)",-0.0399471521341229,-0.145638339136393,0.0657440348681473,0.45776812483945,368,fail
+H2,"METABRIC ER+, Tumour -> Macrophage, k = 20, TP53 mutant - wild-type (adjusted)",-0.00546615902566063,-0.0649100781903697,0.0539777601390484,0.856554716793303,341,fail
+H3,METABRIC round-1 contrasts with q < 0.05 (9) with the same sign in Basel,9,,,,9,pass
+H3-strict,share of replicated signs > 0.5 (one-sided binomial; needs >= 5 discoveries),1,,,0.001953125,9,pass
+P1,METABRIC immune fraction: Basal - LumA and Her2 - LumA,0.105074261358371,0.0325309363071074,0.177617586409635,0.00462670162370041,436,fail
+P2a,"Tumour -> Tumour and Stroma -> Stroma, Basal - LumA > 0",,,,,,fail
+P2b,"B -> T and T -> B (round-1), Basal - LumA > 0",,,,,,pass
+P2c,"Treg -> CD8 T and Treg -> CD4 T, Basal - LumA > 0 (CELESTA)",,,,,,fail
+d,"METABRIC Tumour -> Treg, k = 20, node-positive - node-negative (adjusted, CELESTA)",-0.00618846238798878,-0.0687117714232315,0.0563348466472539,0.845786585160499,386,fail
+P2,at least 2 of P2a-c pass,1,,,,,fail

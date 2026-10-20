@@ -1,0 +1,9 @@
+{
+  "n_perm": 1000,
+  "seed": 20261020,
+  "n_tests": 243,
+  "share_perms_any_discovery": 0.039,
+  "mean_null_p": 0.502976,
+  "share_null_p_lt_005": 0.048486,
+  "calibrated": true
+}

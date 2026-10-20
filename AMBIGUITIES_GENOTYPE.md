@@ -207,3 +207,24 @@ This file records every choice in Part IV ("tumour genotype and spatial organisa
   - The METABRIC and Basel CELESTA runs get **500 permutations at k = 20** (lab default) for per-image significance and the stage-2 null check. At k = 10 and 40 only the observed CLQ is computed.
   - The robustness runs get observed CLQs only: METABRIC round-1 labels, published labels in both cohorts, and the lab's keep-Unknown convention.
 - **Why the association results are unaffected.** The patient-level models (stage 3) use the observed CLQ only. The task's "500 permutations per image" is met at the primary k. The unit tests show that the observed CLQ at a k without permutations is identical to the one computed alongside permutations.
+
+## Stage 3: associations
+
+**S3.1 Validation before the real run.** `scripts/genotype_models.R --dry-run` was run first. It shuffles every patient label jointly with seed 1 and writes to `models_dryrun/`, which is not committed.
+- The full pipeline ran.
+- As expected under shuffled labels: Q1, TP53 and PIK3CA had 0 discoveries each, and the permutation check was calibrated (4.0% of permutations with any discovery; mean null p 0.498).
+- One single test (H2) came out at p = 0.008 on shuffled labels. This is a reminder of what single pre-specified tests can do by chance.
+- Two code fixes were made during the dry run, before any real label was used: missing values written by pandas as empty fields (`na.strings`), and empty result tables.
+
+**S3.2 Analysis sets.**
+- **Patients:** ≥ 500 typed cells, with age and grade known.
+- **Q1 population:** METABRIC patients with one of the five PAM50 classes, about 436.
+- **Per-pair n:** varies because a pair is undefined in an image with ≤ 5 cells of either type. For example, the Tumour→CD8 T pair has 368 patients.
+- **Published-label sample:** the published Treg class is rare (0.6% of cells), so published-label Treg pairs are defined in only 78–88 patients. Comparisons involving published Tregs are therefore much less precise.
+
+**S3.3 Reading of H3.** The pre-registered H3 counts contrasts, and the 9 METABRIC discoveries are 3 ordered pairs × 3 values of k, so they are not independent.
+- Macrophage→Tumour (Basal < LumA) has the same sign in Basel but an estimate of essentially 0 (p ≈ 0.8).
+- Macrophage↔Endothelial (Basal > LumA) replicates with Basel TN > ER⁺/HER2⁻, p = 0.02–0.17.
+- The H3-strict binomial p (0.002) treats the 9 as independent and overstates the evidence. In the write-up H3 is reported as **one** replicated arrangement (macrophage–endothelial co-localisation higher in basal/TN tumours) plus one same-sign but null pair.
+
+**S3.4 Leave-one-k-out.** There were no Q1 discoveries after adjustment, so the leave-one-k-out file is empty. Consistency across k is reported instead for the replicated contrasts (all 3 k) and for the exploratory TP53 lead (CD8 T→Tumour at all 3 k).
